@@ -1,8 +1,12 @@
 # Self Landing Rocket Final Project Main.
 # Authors: Carson Kohlbrenner, Thomas Dunnington, Owen Craig
 
+cd(@__DIR__) # Change to the directory of the script
+
 # Importing the necessary modules
-import CommonRLInterface
+using CommonRLInterface 
+using Plots # For plotting the environment
+using Images # For rendering the rocket
 
 # Importing the environment
 include("environment.jl")
@@ -21,5 +25,6 @@ I = 10.0 #kg*m^2
 
 env = RocketEnv2D([0.0, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
+render(env)
 
 

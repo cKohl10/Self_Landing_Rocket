@@ -34,7 +34,7 @@ mutable struct RocketEnv2D
 end
 
 # Define the reward function for the environment
-function reward!(env::RocketEnv2D)
+function reward(env::RocketEnv2D)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot = env.state
 
@@ -150,6 +150,55 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
 
     #### Return the reward ####
 end
+
+function CommonRLInterface.render(env::RocketEnv2D)
+    # Unpack the state
+    x, y, x_dot, y_dot, theta, theta_dot = env.state
+
+    # Get rocket Images
+    rocket = load("imgs/rocket.png")
+
+    # Plot the rocket
+    scatter([env.target], [0.0], label="Target", color="red")
+    plot!([env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
+    scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
+    xlims!(env.bounds[1], env.bounds[2])
+    ylims!(0.0, env.bounds[4])
+end
+
+################################################################
+
+################# Simulation Functions #########################
+# function simulate!(env::RocketEnv2D, policy::FunctionPolicy, max_steps::Int)
+#     # Initialize the total reward
+#     total_reward = 0.0
+
+#     # Reset the environment
+#     CommonRLInterface.reset!(env)
+#     s = CommonRLInterface.observe(env)
+
+#     # Loop through the simulation
+#     for i in 1:max_steps
+#         # Get the action from the policy
+#         a = policy(s)
+
+#         # Step in the environment
+#         CommonRLInterface.act!(env, a)
+
+#         # Get the reward
+#         reward = reward(env)
+
+#         # Add the reward to the total
+#         total_reward += reward
+
+#         # Check if the environment is terminated
+#         if CommonRLInterface.terminated(env)
+#             break
+#         end
+#     end
+
+#     return total_reward
+# end
 
 ################################################################
 
