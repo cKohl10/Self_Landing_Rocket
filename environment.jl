@@ -5,16 +5,17 @@ import CommonRLInterface
 # Environment to work with CommonRLInterface
 mutable struct RocketEnv2D
 
-    #### Parameters ####
-    # Bounds of the environment (meters) [x_min, x_max, y_min, y_max]
-    bounds::Vector{Float64}
+    #### Environment Parameters ####
+    bounds::Vector{Float64} # Bounds of the environment (meters) [x_min, x_max, y_min, y_max]
+    dt::Float64 # Time step for the simulation (seconds)
+    target::Float64 # X Position of the target (meters)
+    ################################
 
-    # Thrust and torque of the rocket (scalar in N and N*m)
-    thrust::Float64
-    torque::Float64
-
-    # Time step for the simulation (seconds)
-    dt::Float64
+    #### Rocket Parameters ####
+    thrust::Float64 # Thrust of the rocket (kN)
+    torque::Float64 # Torque of the rocket (kNm)
+    m::Float64 # Mass of the rocket (kg)
+    I::Float64 # Moment of Inertia of the rocket (kg*m^2)
     ####################
 
     #### State Space ####
@@ -30,30 +31,39 @@ mutable struct RocketEnv2D
     # [Thrust Off, No Torque]
     action_space::Vector{Vector{Float64}}
 
-    #### Rewards ####
-    # Reward for landing upright, low velocity, and on the target
-    reward::Function
-
 end
 
 # Define the reward function for the environment
-function reward(env::RocketEnv2D)
+function reward!(env::RocketEnv2D)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot = env.state
 
     # Landing defined as hitting the ground
     if y <= 0.0
-        # Add the reward for landing on the target
+        base_reward = 100.0
+        crash_vel = 2.0 #m/s
+
+        # Add the reward for landing on the target (Normalized by the bounds of the environment)
+        reward = base_reward * (1 - (abs(x - env.target) / (env.bounds[2] - env.bounds[1]))^2)
 
         # Add the reward for landing upright
+        if abs(theta) < 0.1
+            reward += base_reward
+        end
 
         # Add the reward for low velocity
+        if abs(x_dot) < crash_vel && abs(y_dot) < crash_vel
+            reward += base_reward
+        end
 
         return reward
 
     end
 
     # Return a negative reward for going out of bounds
+    if x < env.bounds[1] || x > env.bounds[2]
+        return -100.0
+    end
 
     # A step in the environment is a small negative reward
     reward = -0.1
@@ -62,7 +72,7 @@ function reward(env::RocketEnv2D)
 end
 
 # Constructor for the environment
-function RocketEnv2D(bounds::Vector{Float64}, thrust::Float64, torque::Float64, dt::Float64)
+function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torque::Float64, m::Float64, I::Float64)
     
     # Initialize the state to the top of the environment
     state = [rand(bounds[1]:bounds[2]), bounds[4], 0.0, 0.0, 0.0, 0.0]
@@ -70,7 +80,10 @@ function RocketEnv2D(bounds::Vector{Float64}, thrust::Float64, torque::Float64, 
     # Define the action space
     action_space = [[thrust, torque], [thrust, -torque], [thrust, 0.0], [0.0, torque], [0.0, -torque], [0.0, 0.0]]
 
-    return RocketEnv2D(bounds, thrust, torque, dt, state, action_space)
+    # Make the target in the middle of the environment
+    target = (bounds[2] - bounds[1]) / 2.0
+
+    return RocketEnv2D(bounds, dt, target, thrust, torque, m, I, state, action_space)
 end
 
 ################ COMMON RL INTERFACE FUNCTIONS ################
@@ -91,6 +104,24 @@ function CommonRLInterface.observe(env::RocketEnv2D)
     return env.state
 end
 
+# Function to check if the environment is in a terminal state
+function CommonRLInterface.terminated(env::RocketEnv2D)
+    # Unpack the state
+    x, y, x_dot, y_dot, theta, theta_dot = env.state
+
+    # Check if the rocket has landed
+    if y <= 0.0
+        return true
+    end
+
+    # Check if the rocket has gone out of bounds
+    if x < env.bounds[1] || x > env.bounds[2]
+        return true
+    end
+
+    return false
+end
+
 # Function to step the environment
 # This is a numerical integrator for the rocket dynamics
 # Make sure to specify a good timestep for the simulation
@@ -100,13 +131,15 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
     # Unpack the state and action
     x, y, x_dot, y_dot, theta, theta_dot = env.state
     thrust, torque = action
+    m = env.m
 
     # Update the state
     x += x_dot * env.dt
     y += y_dot * env.dt
-    x_dot += (thrust * cos(theta) / 1.0) * env.dt
-    y_dot += (thrust * sin(theta) / 1.0) * env.dt
-    theta_dot += torque * env.dt
+    x_dot += (thrust * cos(theta) / m) * env.dt
+    y_dot += (thrust * sin(theta) / m) * env.dt - 9.8 * env.dt
+    theta += theta_dot * env.dt
+    theta_dot += (torque / env.I) * env.dt
 
     # Update the state
     env.state = [x, y, x_dot, y_dot, theta, theta_dot]
