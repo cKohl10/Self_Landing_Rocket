@@ -9,6 +9,7 @@ mutable struct RocketEnv2D
     bounds::Vector{Float64} # Bounds of the environment (meters) [x_min, x_max, y_min, y_max]
     dt::Float64 # Time step for the simulation (seconds)
     target::Float64 # X Position of the target (meters)
+    γ::Float64 # Discount factor
     ################################
 
     #### Rocket Parameters ####
@@ -83,13 +84,17 @@ function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torq
     # Make the target in the middle of the environment
     target = (bounds[2] - bounds[1]) / 2.0
 
-    return RocketEnv2D(bounds, dt, target, thrust, torque, m, I, state, action_space)
+    # Discount factor
+    γ = 1.0
+
+    return RocketEnv2D(bounds, dt, target, γ, thrust, torque, m, I, state, action_space)
 end
 
 ################ COMMON RL INTERFACE FUNCTIONS ################
 
 # Function to initialize the environment and reset after landing
 function CommonRLInterface.reset!(env::RocketEnv2D)
+    bounds = env.bounds
     # Reset the environment to a random x position and the top of the y bounds, also random orientation
     env.state = [rand(bounds[1]:bounds[2]), bounds[4], rand(-5:5), rand(40:60), rand(-pi/2:pi/2), 0.0]
 end
@@ -161,9 +166,20 @@ function CommonRLInterface.render(env::RocketEnv2D)
     # Plot the rocket
     scatter([env.target], [0.0], label="Target", color="red")
     plot!([env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
-    scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
+    #scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
     xlims!(env.bounds[1], env.bounds[2])
     ylims!(0.0, env.bounds[4])
+
+    # Simulate n trajectories and plot the results
+    n = 1
+    for i in 1:n
+        # Simulate the trajectory
+        x_traj, y_traj = simulate_trajectory!(env, s->[1,0], 1000)
+
+        # Plot the trajectory
+        plot!(x_traj, y_traj, label="Trajectory $i", color="blue", lw=1)
+    end
+
 end
 
 ################################################################
@@ -173,12 +189,54 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
     # Initialize the total reward
     total_reward = 0.0
 
+    # Get the discount factor
+    γ = env.γ
+
+    # Reset the environment
+    CommonRLInterface.reset!(env)
+    s = CommonRLInterface.observe(env)
+
+    # Append s to a list of all states over the entire simulation
+    states = [s]
+
+    # Loop through the simulation
+    for i in 1:max_steps
+        # Get the action from the policy
+        a = policy(s)
+
+        # Step in the environment
+        CommonRLInterface.act!(env, a)
+
+        # Append the state to the list of states
+        push!(states, CommonRLInterface.observe(env))
+
+        # Get the reward
+        r = reward(env)
+
+        # Add the reward to the total
+        total_reward += γ^i * r
+
+        # Check if the environment is terminated
+        if CommonRLInterface.terminated(env)
+            break
+        end
+    end 
+    return states
+end
+
+function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int)
+    # Initialize the total reward
+    total_reward = 0.0
+
+    # Get the discount factor
+    γ = env.γ
+
     # Reset the environment
     CommonRLInterface.reset!(env)
     s = CommonRLInterface.observe(env)
 
     # Loop through the simulation
-    for _ in 1:max_steps
+    for i in 1:max_steps
         # Get the action from the policy
         a = policy(s)
 
@@ -189,7 +247,7 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
         r = reward(env)
 
         # Add the reward to the total
-        total_reward += r
+        total_reward += γ^i * r
 
         # Check if the environment is terminated
         if CommonRLInterface.terminated(env)
