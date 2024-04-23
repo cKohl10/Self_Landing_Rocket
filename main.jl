@@ -15,7 +15,7 @@ include("environment.jl")
 # Create a 2D rocket environment
 # Environment parameters
 x_max = 100.0 # m
-y_max = 100.0 # m
+y_max = 5000.0 # m
 dt = 0.1 # s
 
 # Rocket parameters
@@ -28,11 +28,12 @@ env = RocketEnv2D([0.0, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
 rendObj = render(env)
 
-# Define basic policy and test simulate function
+# Define basic policy
 policy = state -> begin
     return [0.0, 0.0]
 end
 
+# Test simulate function
 max_steps = 1000
 total_reward = simulate!(env, policy, max_steps)
 print("Total Reward: ", total_reward)
