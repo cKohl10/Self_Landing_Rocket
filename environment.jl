@@ -157,11 +157,11 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
 end
 
 function CommonRLInterface.render(env::RocketEnv2D)
-    # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot = env.state
+
+    println("Rendering the environment")
 
     # Get rocket Images
-    rocket = load("imgs/rocket.png")
+    #rocket = load("imgs/rocket.png")
 
     # Plot the rocket
     scatter([env.target], [0.0], label="Target", color="red")
@@ -171,15 +171,22 @@ function CommonRLInterface.render(env::RocketEnv2D)
     ylims!(0.0, env.bounds[4])
 
     # Simulate n trajectories and plot the results
-    n = 1
+    n = 10
     for i in 1:n
         # Simulate the trajectory
-        x_traj, y_traj = simulate_trajectory!(env, s->[1.0,0.0], 1000)
+        state = simulate_trajectory!(env, s->[0.0,0.0], 1000)
+
+        x_traj = [s[1] for s in state]
+        y_traj = [s[2] for s in state]
 
         # Plot the trajectory
         plot!(x_traj, y_traj, label="Trajectory $i", color="blue", lw=1)
+
+        # Plot the orientation of the rocket as a black arrow
+        quiver!([x_traj[end]], [y_traj[end]], quiver=([cos(state[end][5])], [sin(state[end][5])]), color="black")
     end
 
+    return plot!()
 end
 
 ################################################################
@@ -195,6 +202,8 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
     # Reset the environment
     CommonRLInterface.reset!(env)
     s = CommonRLInterface.observe(env)
+
+    println("Initial State in Trajectory: $(round.(s; digits=2))")
 
     # Append s to a list of all states over the entire simulation
     states = [s]
@@ -221,6 +230,9 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
             break
         end
     end 
+
+    print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+
     return states
 end
 

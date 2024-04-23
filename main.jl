@@ -27,7 +27,7 @@ I = (1.0/12.0)*m*(h^2) #kg*m^2 using simple rod model
 # Create a 2D rocket environment
 env = RocketEnv2D([0.0, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
-rendObj = render(env)
+display(render(env))
 
 # Define basic policy
 policy = state -> begin
