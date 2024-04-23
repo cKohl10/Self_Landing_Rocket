@@ -1,3 +1,7 @@
+# Importing the environment
+include("environment.jl")
+
+
 # DQN Function
 function DQN_Solve(env)
     # Deep Q Network to approximate the Q values
@@ -33,4 +37,15 @@ function DQN_Solve(env)
         end
         return buffer
     end
+
+    # Evaluate function
+    function eval(Q_eval, num_eps)
+        totReward = 0
+        for _ in 1:num_eps
+            totReward += simulate!(env, policy, n)
+        end
+        # Return the average reward per episode
+        return totReward / num_eps
+    end
+
 end
