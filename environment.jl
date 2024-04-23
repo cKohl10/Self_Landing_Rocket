@@ -174,7 +174,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
     n = 1
     for i in 1:n
         # Simulate the trajectory
-        x_traj, y_traj = simulate_trajectory!(env, s->[1,0], 1000)
+        x_traj, y_traj = simulate_trajectory!(env, s->[1.0,0.0], 1000)
 
         # Plot the trajectory
         plot!(x_traj, y_traj, label="Trajectory $i", color="blue", lw=1)
@@ -185,7 +185,7 @@ end
 ################################################################
 
 ################# Simulation Functions #########################
-function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
+function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int)
     # Initialize the total reward
     total_reward = 0.0
 
@@ -224,7 +224,7 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
     return states
 end
 
-function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int)
+function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
     # Initialize the total reward
     total_reward = 0.0
 
