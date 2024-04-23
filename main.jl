@@ -7,6 +7,7 @@ cd(@__DIR__) # Change to the directory of the script
 using CommonRLInterface 
 using Plots # For plotting the environment
 using Images # For rendering the rocket
+using POMDPTools: FunctionPolicy
 
 # Importing the environment
 include("environment.jl")
@@ -25,6 +26,14 @@ I = 10.0 #kg*m^2
 # Create a 2D rocket environment
 env = RocketEnv2D([0.0, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
-render(env)
+rendObj = render(env)
 
+# Define basic policy and test simulate function
+policy = state -> begin
+    return [0.0, 0.0]
+end
+
+max_steps = 1000
+total_reward = simulate!(env, policy, max_steps)
+print("Total Reward: ", total_reward)
 

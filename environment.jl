@@ -75,7 +75,7 @@ end
 function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torque::Float64, m::Float64, I::Float64)
     
     # Initialize the state to the top of the environment
-    state = [rand(bounds[1]:bounds[2]), bounds[4], 0.0, 0.0, 0.0, 0.0]
+    state = [rand(bounds[1]:bounds[2]), bounds[4], 0.0, 0.0, rand(-pi:pi), 0.0]
 
     # Define the action space
     action_space = [[thrust, torque], [thrust, -torque], [thrust, 0.0], [0.0, torque], [0.0, -torque], [0.0, 0.0]]
@@ -90,8 +90,8 @@ end
 
 # Function to initialize the environment and reset after landing
 function CommonRLInterface.reset!(env::RocketEnv2D)
-    # Reset the environment to a random x position and the top of the y bounds
-    env.state = [rand(env.bounds[1]:env.bounds[2]), env.bounds[4], 0.0, 0.0, 0.0, 0.0 ]
+    # Reset the environment to a random x position and the top of the y bounds, also random orientation
+    env.state = [rand(env.bounds[1]:env.bounds[2]), env.bounds[4], 0.0, 0.0, rand(-pi:pi), 0.0 ]
 end
 
 # Returns the actions in the environment
@@ -169,36 +169,35 @@ end
 ################################################################
 
 ################# Simulation Functions #########################
-# function simulate!(env::RocketEnv2D, policy::FunctionPolicy, max_steps::Int)
-#     # Initialize the total reward
-#     total_reward = 0.0
+function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
+    # Initialize the total reward
+    total_reward = 0.0
 
-#     # Reset the environment
-#     CommonRLInterface.reset!(env)
-#     s = CommonRLInterface.observe(env)
+    # Reset the environment
+    CommonRLInterface.reset!(env)
+    s = CommonRLInterface.observe(env)
 
-#     # Loop through the simulation
-#     for i in 1:max_steps
-#         # Get the action from the policy
-#         a = policy(s)
+    # Loop through the simulation
+    for _ in 1:max_steps
+        # Get the action from the policy
+        a = policy(s)
 
-#         # Step in the environment
-#         CommonRLInterface.act!(env, a)
+        # Step in the environment
+        CommonRLInterface.act!(env, a)
 
-#         # Get the reward
-#         reward = reward(env)
+        # Get the reward
+        r = reward(env)
 
-#         # Add the reward to the total
-#         total_reward += reward
+        # Add the reward to the total
+        total_reward += r
 
-#         # Check if the environment is terminated
-#         if CommonRLInterface.terminated(env)
-#             break
-#         end
-#     end
-
-#     return total_reward
-# end
+        # Check if the environment is terminated
+        if CommonRLInterface.terminated(env)
+            break
+        end
+    end 
+    return total_reward
+end
 
 ################################################################
 
