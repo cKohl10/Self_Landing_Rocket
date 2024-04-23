@@ -75,7 +75,7 @@ end
 function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torque::Float64, m::Float64, I::Float64)
     
     # Initialize the state to the top of the environment
-    state = [rand(bounds[1]:bounds[2]), bounds[4], 0.0, 0.0, 0.0, 0.0]
+    state = [rand(bounds[1]:bounds[2]), bounds[4], 0.0, 0.0, rand(-pi:pi), 0.0]
 
     # Define the action space
     action_space = [[thrust, torque], [thrust, -torque], [thrust, 0.0], [0.0, torque], [0.0, -torque], [0.0, 0.0]]
@@ -90,8 +90,8 @@ end
 
 # Function to initialize the environment and reset after landing
 function CommonRLInterface.reset!(env::RocketEnv2D)
-    # Reset the environment to a random x position and the top of the y bounds
-    env.state = [rand(env.bounds[1]:env.bounds[2]), env.bounds[4], 0.0, 0.0, 0.0, 0.0 ]
+    # Reset the environment to a random x position and the top of the y bounds, also random orientation
+    env.state = [rand(env.bounds[1]:env.bounds[2]), env.bounds[4], 0.0, 0.0, rand(-pi:pi), 0.0 ]
 end
 
 # Returns the actions in the environment
