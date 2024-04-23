@@ -21,6 +21,7 @@ mutable struct RocketEnv2D
 
     #### State Space ####
     # [x, y, x_dot, y_dot, theta, theta_dot]
+    # theta is defined as 0 when the rocket is upright
     state::Vector{Float64}
 
     #### Action Space ####
@@ -48,7 +49,7 @@ function reward(env::RocketEnv2D)
         reward = 0.0
 
         # Add the reward for landing on the target
-        if abs(x - env.target) < 10.0
+        if abs(x - env.target) < 0.1 * (env.bounds[2] - env.bounds[1])
             reward += base_reward
         end
 
@@ -67,7 +68,7 @@ function reward(env::RocketEnv2D)
     end
 
     # Return a negative reward for going out of bounds
-    if x < env.bounds[1] || x > env.bounds[2]
+    if x < env.bounds[1] || x > env.bounds[2] || y > env.bounds[4]*1.5
         return -1000.0
     end
 
@@ -79,9 +80,6 @@ end
 
 # Constructor for the environment
 function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torque::Float64, m::Float64, I::Float64)
-    
-    # Initialize the state to the top of the environment
-    state = [rand(bounds[1]:bounds[2]), bounds[4], rand(-0.5:0.5), rand(-60:-40), rand(-pi/2:pi/2), 0.0]
 
     # Define the action space
     action_space = [[thrust, torque], [thrust, -torque], [thrust, 0.0], [0.0, torque], [0.0, -torque], [0.0, 0.0]]
@@ -92,7 +90,11 @@ function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torq
     # Discount factor
     γ = 1.0
 
-    return RocketEnv2D(bounds, dt, target, γ, thrust, torque, m, I, state, action_space)
+    R = RocketEnv2D(bounds, dt, target, γ, thrust, torque, m, I, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], action_space)
+
+    CommonRLInterface.reset!(R) # Reset the environment's state
+
+    return R
 end
 
 ################ COMMON RL INTERFACE FUNCTIONS ################
@@ -101,7 +103,15 @@ end
 function CommonRLInterface.reset!(env::RocketEnv2D)
     bounds = env.bounds
     # Reset the environment to a random x position and the top of the y bounds, also random orientation
-    env.state = [rand(bounds[1]:bounds[2]), bounds[4], rand(-0.5:0.5), rand(-60:-40), rand(-pi/2:pi/2), 0.0]
+     ### Hyperparameters ###
+     max_angle = pi/2.0 # Maximum angle of the rocket spawn
+     max_x_dot = 10.0 # Maximum x velocity of the rocket spawn
+     max_y_dot = 200.0 # Maximum y velocity of the rocket spawn
+     
+     # Initialize the state to the top of the environment
+     midpoint = (bounds[2] - bounds[1]) / 2.0 # Middle of the environment
+     width_scale = 0.5 # Scale the width of spawn points
+     env.state = [rand_float(bounds[1] + midpoint*(1 - width_scale), bounds[1] + midpoint*(1 + width_scale)), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0]
 end
 
 # Returns the actions in the environment
@@ -120,7 +130,7 @@ function CommonRLInterface.terminated(env::RocketEnv2D)
     x, y, x_dot, y_dot, theta, theta_dot = env.state
 
     # Check if the rocket has landed
-    if y <= 0.0
+    if y <= 0.0 || y >= env.bounds[4]*1.5
         return true
     end
 
@@ -146,8 +156,8 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
     # Update the state
     x += x_dot * env.dt
     y += y_dot * env.dt
-    x_dot += (thrust * cos(theta) / m) * env.dt
-    y_dot += (thrust * sin(theta) / m) * env.dt - 9.8 * env.dt
+    x_dot += (thrust * cos(theta + pi/2) / m) * env.dt
+    y_dot += (thrust * sin(theta + pi/2) / m) * env.dt - 9.8 * env.dt
     theta += theta_dot * env.dt
     theta_dot += (torque / env.I) * env.dt
 
@@ -170,29 +180,56 @@ function CommonRLInterface.render(env::RocketEnv2D)
     #rocket = load("imgs/rocket.png")
 
     # Plot the rocket
-    scatter([env.target], [0.0], label="Target", color="red")
-    plot!([env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
+    s = scatter([env.target], [0.0], label="Target", color="red")
+    plot!(s, [env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
     #scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
-    xlims!(env.bounds[1], env.bounds[2])
-    ylims!(-200.0, env.bounds[4])
+    xlims!(s, env.bounds[1], env.bounds[2])
+    ylims!(s, -200.0, env.bounds[4]*1.2)
+
+    # Plot the target bounds
+    plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
 
     # Simulate n trajectories and plot the results
     n = 20
+    # Define the number of arrows to plot per trajectory
+    num_arrows = 7
+    arrow_scale = 5000.0
+
+    # Create a new plot for the states over time
+    p = plot(layout=(3,1), size=(800, 600))
+
     for i in 1:n
         # Simulate the trajectory
-        state, total_reward = simulate_trajectory!(env, s->[0.0,0.0], 1000)
+        state, total_reward = simulate_trajectory!(env, s->[0.0 * env.thrust, 0.0 * env.torque], 1000)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
 
         # Plot the trajectory
-        plot!(x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=1)
+        plot!(s, x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=2)
 
-        # Plot the orientation of the rocket as a black arrow
-        quiver!([x_traj[end]], [y_traj[end]], quiver=([cos(state[end][5])], [sin(state[end][5])]), color="black")
+        # Calculate the interval at which to plot the arrows
+        interval = round(Int, length(x_traj) / num_arrows)
+
+        # Plot the arrows at regular intervals along the trajectory
+        for i in 1:interval:length(x_traj)
+            theta = state[i][5]
+            # Calculate the magnitude of the velocity vector
+            velocity_magnitude = sqrt(state[i][3]^2 + state[i][4]^2)
+            # Normalize the velocity vector for 50 m/s
+            velocity_magnitude_x = (velocity_magnitude * (env.bounds[2] - env.bounds[1])) / arrow_scale
+            velocity_magnitude_y = (velocity_magnitude * (env.bounds[4] - env.bounds[3])) / arrow_scale
+
+            u = velocity_magnitude_x * cos(theta + pi/2)
+            v = velocity_magnitude_y * sin(theta + pi/2)
+            quiver!(s, [x_traj[i]], [y_traj[i]], quiver=([u], [v]), color="black")
+        end
+
+        # Plot the state over time
+        p = state_plot(p, state, reward_to_color(total_reward))
     end
 
-    return plot!()
+    return s, p
 end
 
 ################################################################
@@ -237,8 +274,8 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
         end
     end 
 
-    #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
     println("Total Reward: ", total_reward)
+    print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
 
     return states, total_reward
 end
