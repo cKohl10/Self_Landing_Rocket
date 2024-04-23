@@ -1,4 +1,5 @@
 using ColorSchemes
+using Statistics
 
 function reward_to_color(reward)
     # Normalize the reward to a value between 0 and 1
@@ -34,4 +35,19 @@ end
 
 function rand_float(min::Float64, max::Float64)
     return min + rand() * (max - min)
+end
+
+# Useful for plotting the learning curves
+function data_plot(data, label)
+    epochs = 1:length(data)
+    n = ceil(Int, length(epochs)/500)
+    if n <= 0
+        n = 1
+    end
+    x = n:n:length(epochs)
+    y = [mean(data[i-n+1:i]) for i in x]
+    p = plot(x, y)
+    xlabel!("Training Epochs")
+    ylabel!(label)
+    display(p)
 end

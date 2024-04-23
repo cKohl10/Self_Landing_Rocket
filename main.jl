@@ -35,15 +35,18 @@ total_plots, state_plots = render(env)
 display(state_plots)
 display(total_plots)
 
+# Train a DQN model
+Q = DQN_Solve(env)
+
 # Define basic policy
 policy = state -> begin
     return [0.0, 0.0]
 end
 
 # Test simulate function
-max_steps = 1000
-total_reward = simulate!(env, policy, max_steps)
-print("Total Reward: ", total_reward)
+# max_steps = 1000
+# total_reward = simulate!(env, policy, max_steps)
+# print("Total Reward: ", total_reward)
 
 
 

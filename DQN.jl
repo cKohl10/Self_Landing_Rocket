@@ -2,6 +2,10 @@ using Flux
 
 # DQN Function
 function DQN_Solve(env)
+
+    print("Training DQN Model...\n")
+    reset!(env)
+
     # Deep Q Network to approximate the Q values
     Q = Chain(Dense(length(actions(env)), 128, relu),
             Dense(128, length(actions(env))))
@@ -17,9 +21,9 @@ function DQN_Solve(env)
     # Epsilon Greedy Policy
     function policy(s, epsilon=0.1)
         if rand() < epsilon
-            return rand(actions(env))
+            return rand(1:length(actions(env)))
         else
-            return actions(env)[argmax(Q(s))]
+            return argmax(Q(s))
         end
     end
 
@@ -27,15 +31,16 @@ function DQN_Solve(env)
     function experience(buffer, n)
         # Loop through n steps in the environment and add to the buffer
         for i = 1:n
+
             done = terminated(env)
             if done  # Break if a terminal state is reached
                 break
             end
             s = observe(env)
-            a = policy(s)
-            r = act!(env, a)
+            a_ind = policy(s)
+            r = act!(env, actions(env)[a_ind])
             sp = observe(env)
-            experience_tuple = (s, a, r, sp, done)
+            experience_tuple = (s, a_ind, r, sp, done)
             push!(buffer, experience_tuple)                 # Add to the experience
         end
         return buffer
@@ -57,6 +62,7 @@ function DQN_Solve(env)
 
     # Instantiate the buffer, 1000 steps for each episode
     buffer = []
+    rewards_history = []
     buffer = experience(buffer, n)      # Initial buffer episode
 
     # Execute DQN Learning
@@ -89,6 +95,9 @@ function DQN_Solve(env)
         # Evaluate the epoch
         avgReward = eval(Q, num_eps)
 
+        # Append the average reward to the rewards history
+        push!(rewards_history, avgReward)
+
         # Shift the buffer if exceeding buffer size
         if length(buffer) > bufferSize
             buffer = buffer[end-bufferSize:end]
@@ -96,5 +105,17 @@ function DQN_Solve(env)
 
         # Output data
         print("Epoch: ", epoch, "\t Buffer Size: ", length(buffer), "\t Average Reward: ", avgReward, "\n")
+
+        # Display simulated trajectories
+        if epoch % 10 == 0
+            # Simulate the environment with a few trajectories
+            title_name = "Epoch: " * string(epoch)
+            display(render(env, s->actions(env)[argmax(Q(s))], title_name))
+
+            # Plot the learning curve
+            display(data_plot(rewards_history, "Average Reward"))
+        end
     end
+
+    return Q
 end

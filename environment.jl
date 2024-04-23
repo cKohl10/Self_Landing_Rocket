@@ -190,7 +190,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
     plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
 
     # Simulate n trajectories and plot the results
-    n = 20
+    n = 10
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
     arrow_scale = 5000.0
@@ -230,6 +230,69 @@ function CommonRLInterface.render(env::RocketEnv2D)
     end
 
     return s, p
+end
+
+function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::String)
+
+    println("Rendering the environment")
+
+    # Get rocket Images
+    #rocket = load("imgs/rocket.png")
+
+    # Plot the rocket
+    s = scatter([env.target], [0.0], label="Target", color="red")
+    plot!(s, [env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
+    #scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
+    xlims!(s, env.bounds[1], env.bounds[2])
+    ylims!(s, -200.0, env.bounds[4]*1.2)
+
+    # title
+    title!(s, title)
+
+    # Plot the target bounds
+    plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
+
+    # Simulate n trajectories and plot the results
+    n = 10
+    # Define the number of arrows to plot per trajectory
+    num_arrows = 7
+    arrow_scale = 5000.0
+
+    # Create a new plot for the states over time
+    #p = plot(layout=(3,1), size=(800, 600))
+
+    for i in 1:n
+        # Simulate the trajectory
+        state, total_reward = simulate_trajectory!(env, policy, 1000)
+
+        x_traj = [s[1] for s in state]
+        y_traj = [s[2] for s in state]
+
+        # Plot the trajectory
+        plot!(s, x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=2)
+
+        # Calculate the interval at which to plot the arrows
+        interval = round(Int, length(x_traj) / num_arrows)
+
+        # Plot the arrows at regular intervals along the trajectory
+        for i in 1:interval:length(x_traj)
+            theta = state[i][5]
+            # Calculate the magnitude of the velocity vector
+            velocity_magnitude = sqrt(state[i][3]^2 + state[i][4]^2)
+            # Normalize the velocity vector for 50 m/s
+            velocity_magnitude_x = (velocity_magnitude * (env.bounds[2] - env.bounds[1])) / arrow_scale
+            velocity_magnitude_y = (velocity_magnitude * (env.bounds[4] - env.bounds[3])) / arrow_scale
+
+            u = velocity_magnitude_x * cos(theta + pi/2)
+            v = velocity_magnitude_y * sin(theta + pi/2)
+            quiver!(s, [x_traj[i]], [y_traj[i]], quiver=([u], [v]), color="black")
+        end
+
+        # Plot the state over time
+        #p = state_plot(p, state, reward_to_color(total_reward))
+    end
+
+    return s
 end
 
 ################################################################
@@ -274,8 +337,8 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
         end
     end 
 
-    println("Total Reward: ", total_reward)
-    print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+    #println("Total Reward: ", total_reward)
+    #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
 
     return states, total_reward
 end
