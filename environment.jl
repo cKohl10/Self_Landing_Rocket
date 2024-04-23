@@ -159,6 +159,7 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
     # If the rocket goes out of bounds, reset the environment and return a negative reward
 
     #### Return the reward ####
+    return reward(env)
 end
 
 function CommonRLInterface.render(env::RocketEnv2D)
