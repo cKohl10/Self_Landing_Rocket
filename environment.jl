@@ -45,7 +45,12 @@ function reward(env::RocketEnv2D)
         crash_vel = 2.0 #m/s
 
         # Add the reward for landing on the target (Normalized by the bounds of the environment)
-        reward = base_reward * (1 - (abs(x - env.target) / (env.bounds[2] - env.bounds[1]))^2)
+        reward = 0.0
+
+        # Add the reward for landing on the target
+        if abs(x - env.target) < 10.0
+            reward += base_reward
+        end
 
         # Add the reward for landing upright
         if abs(theta) < 0.1
@@ -63,7 +68,7 @@ function reward(env::RocketEnv2D)
 
     # Return a negative reward for going out of bounds
     if x < env.bounds[1] || x > env.bounds[2]
-        return -100.0
+        return -1000.0
     end
 
     # A step in the environment is a small negative reward
@@ -168,19 +173,19 @@ function CommonRLInterface.render(env::RocketEnv2D)
     plot!([env.bounds[1], env.bounds[2]], [0.0, 0.0], label="Ground", color="green", lw=2)
     #scatter!([x],[y], label="Rocket", color="blue", ms=10, marker=:circle)
     xlims!(env.bounds[1], env.bounds[2])
-    ylims!(0.0, env.bounds[4])
+    ylims!(-200.0, env.bounds[4])
 
     # Simulate n trajectories and plot the results
-    n = 10
+    n = 20
     for i in 1:n
         # Simulate the trajectory
-        state = simulate_trajectory!(env, s->[0.0,0.0], 1000)
+        state, total_reward = simulate_trajectory!(env, s->[0.0,0.0], 1000)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
 
         # Plot the trajectory
-        plot!(x_traj, y_traj, label="Trajectory $i", color="blue", lw=1)
+        plot!(x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=1)
 
         # Plot the orientation of the rocket as a black arrow
         quiver!([x_traj[end]], [y_traj[end]], quiver=([cos(state[end][5])], [sin(state[end][5])]), color="black")
@@ -203,7 +208,7 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
     CommonRLInterface.reset!(env)
     s = CommonRLInterface.observe(env)
 
-    println("Initial State in Trajectory: $(round.(s; digits=2))")
+    #println("Initial State in Trajectory: $(round.(s; digits=2))")
 
     # Append s to a list of all states over the entire simulation
     states = [s]
@@ -231,9 +236,10 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
         end
     end 
 
-    print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+    #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+    println("Total Reward: ", total_reward)
 
-    return states
+    return states, total_reward
 end
 
 function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
