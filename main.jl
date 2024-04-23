@@ -39,3 +39,10 @@ max_steps = 1000
 total_reward = simulate!(env, policy, max_steps)
 print("Total Reward: ", total_reward)
 
+
+
+
+
+
+
+
