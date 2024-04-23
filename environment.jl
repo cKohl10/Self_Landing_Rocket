@@ -169,36 +169,35 @@ end
 ################################################################
 
 ################# Simulation Functions #########################
-# function simulate!(env::RocketEnv2D, policy::FunctionPolicy, max_steps::Int)
-#     # Initialize the total reward
-#     total_reward = 0.0
+function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
+    # Initialize the total reward
+    total_reward = 0.0
 
-#     # Reset the environment
-#     CommonRLInterface.reset!(env)
-#     s = CommonRLInterface.observe(env)
+    # Reset the environment
+    CommonRLInterface.reset!(env)
+    s = CommonRLInterface.observe(env)
 
-#     # Loop through the simulation
-#     for i in 1:max_steps
-#         # Get the action from the policy
-#         a = policy(s)
+    # Loop through the simulation
+    for _ in 1:max_steps
+        # Get the action from the policy
+        a = policy(s)
 
-#         # Step in the environment
-#         CommonRLInterface.act!(env, a)
+        # Step in the environment
+        CommonRLInterface.act!(env, a)
 
-#         # Get the reward
-#         reward = reward(env)
+        # Get the reward
+        r = reward(env)
 
-#         # Add the reward to the total
-#         total_reward += reward
+        # Add the reward to the total
+        total_reward += r
 
-#         # Check if the environment is terminated
-#         if CommonRLInterface.terminated(env)
-#             break
-#         end
-#     end
-
-#     return total_reward
-# end
+        # Check if the environment is terminated
+        if CommonRLInterface.terminated(env)
+            break
+        end
+    end 
+    return total_reward
+end
 
 ################################################################
 
