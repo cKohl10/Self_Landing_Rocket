@@ -29,11 +29,12 @@ env = RocketEnv2D([0.0, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
 rendObj = render(env)
 
-# Define basic policy and test simulate function
+# Define basic policy
 policy = state -> begin
     return [0.0, 0.0]
 end
 
+# Test simulate function
 max_steps = 1000
 total_reward = simulate!(env, policy, max_steps)
 print("Total Reward: ", total_reward)
