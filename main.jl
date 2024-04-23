@@ -12,6 +12,7 @@ using POMDPTools: FunctionPolicy
 # Importing the environment
 include("environment.jl")
 include("helperFuncs.jl")
+include("DQN.jl")
 
 # Environment parameters
 x_max = 100.0 # m
