@@ -243,7 +243,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
     plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
 
     # Simulate n trajectories and plot the results
-    n = 10
+    n = 1
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
     arrow_scale = 5000.0
