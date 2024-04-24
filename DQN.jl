@@ -19,10 +19,35 @@ function DQN_Solve(env)
     epochs = 1000
     num_eps = 100   # For evaluate function
 
+    # Define Huristic policy by using controler and taking the closest value
+    function discrete_policy(s)
+        actions = []
+        a = heuristic_policy(s)
+        thrust_cont = a[1]
+        thrust_threshold = 1.2
+        torque_threshold = 1.2
+        torque_cont = a[2]
+        if env.thrust <= thrust_cont * thrust_threshold
+            thrust = env.thrust
+        else
+            thrust = 0.0
+        end
+        if abs(env.torque) <= abs(torque_cont) * torque_threshold
+            if torque_cont > 0
+                torque = env.torque
+            else
+                torque = -env.torque
+            end
+        else
+            torque = 0.0
+        end
+        actions = [thrust,torque]
+        return actions
+    end
     # Epsilon Greedy Policy
     function policy(s, epsilon=0.1)
         if rand() < epsilon
-            return rand(1:length(actions(env)))
+            return discrete_policy(s)
         else
             return argmax(Q(s))
         end
