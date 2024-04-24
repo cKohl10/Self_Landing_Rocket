@@ -184,7 +184,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
     n = 10
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
-    arrow_scale = 5000.0
+    arrow_scale = 1000.0
 
     function make_arrow!(arrow_scale, state)
         theta = state[5]
