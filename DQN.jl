@@ -154,3 +154,174 @@ function DQN_Solve(env)
 
     return Q
 end
+
+# DQN Function
+function DQN_Solve_Metric(env)
+
+    print("Training DQN Model...\n")
+    reset!(env)
+
+    # Deep Q Network to approximate the Q values
+    Q = Chain(Dense(length(observe(env)), 128, relu),
+            Dense(128, length(actions(env))))
+    Q_target = deepcopy(Q)
+
+    # HYPERPARAMETERS
+    bufferSize = 10000
+    batch = 2000
+    epsilon = 0.1
+    n = 10000
+    epochs = 1000
+    num_eps = 100   # For evaluate function
+
+    function discrete_policy_distance_metric(s)
+        thrust_cont, torque_cont = heuristic_policy(s)
+
+        # Normalize the continuous thrust and torque into a vector
+        thrust_cont = thrust_cont / env.thrust
+        torque_cont = torque_cont / env.torque
+        cont_vec = [thrust_cont, torque_cont]
+
+        # Compare using the Euclidean distance to the possible actions
+        A = actions(env)
+        min_dist = Inf
+        min_ind = 1
+        for i in 1:length(A)
+            D = sqrt((A[i][1]/env.thrust - cont_vec[1])^2 + (A[i][2]/env.torque - cont_vec[2])^2)
+            if D < min_dist
+                min_dist = D
+                min_ind = i
+            end
+        end
+        
+        return min_ind
+
+    end
+
+    function continuous_policy(s)
+        thrust_cont, torque_cont = heuristic_policy(s)
+        return [thrust_cont, torque_cont]
+    end
+
+    
+    # Epsilon Greedy Policy
+    function policy(s, epsilon=0.1)
+        if rand() < epsilon
+            return discrete_policy_distance_metric(s)
+        else
+            return argmax(Q(s))
+        end
+    end
+
+    # Gain experience function, appends the buffer
+    function experience(buffer, n, ϵ)
+        # Loop through n steps in the environment and add to the buffer
+        for i = 1:n
+
+            done = terminated(env)
+            if done  # Break if a terminal state is reached
+                break
+            end
+            s = observe(env)
+            a_ind = policy(s, ϵ)
+            r = act!(env, actions(env)[a_ind])
+            sp = observe(env)
+            experience_tuple = (s, a_ind, r, sp, done)
+            push!(buffer, experience_tuple)                 # Add to the experience
+        end
+        return buffer
+    end
+
+    # Evaluate function, calculates the average reward using the simulate function for a given number of episodes
+    function eval(Q_eval, num_eps)
+        # Define policy from the Q values, take the maximum Q value for a given state
+        Qpolicy = s->actions(env)[argmax(Q_eval(s))]
+
+        totReward = 0
+        for _ in 1:num_eps
+            totReward += simulate!(env, Qpolicy, n)
+        end
+        # Return the average reward per episode
+        return totReward / num_eps
+    end
+
+
+    # Instantiate the buffer, 1000 steps for each episode
+    buffer = []
+    rewards_history = []
+    best_reward = -1000.0
+    buffer = experience(buffer, n, 1)      # Initial buffer episode
+
+    # Execute DQN Learning
+    for epoch in 1:epochs
+        # Rest the environment
+        reset!(env)
+
+        # Set Optimizer
+        opt = Flux.setup(ADAM(0.0005), Q)
+
+        # Gain experience
+        ϵ = 1 - (epoch/epochs)*0.9
+        buffer = experience(buffer, n, ϵ)
+
+        # Copy Q network and define the loss function
+        Q_target = deepcopy(Q)
+        function loss(Q, s, a_ind, r, sp, done)
+            # Discount factor
+            g = 0.99
+            # Reached terminal state
+            if done
+                return (r - Q(s)[a_ind])^2
+            end
+            # DQN Loss Function
+            return (r + g*maximum(Q_target(sp)) - Q(s)[a_ind])^2
+        end
+
+        # Get random data from the buffer
+        data = rand(buffer, batch)
+
+        # Train based on random data in the buffer
+        Flux.Optimise.train!(loss, Q, data, opt)
+
+        # Evaluate the epoch
+        avgReward = eval(Q, num_eps)
+
+        # Append the average reward to the rewards history
+        push!(rewards_history, avgReward)
+
+        # Save the reward if it is the best reward
+        if avgReward > best_reward
+            best_reward = avgReward
+        end
+
+        # Shift the buffer if exceeding buffer size
+        if length(buffer) > bufferSize
+            buffer = buffer[end-bufferSize:end]
+        end
+
+        # Output data
+        print("Epoch: ", epoch, "\t Buffer Size: ", length(buffer), "\t Average Reward: ", avgReward, "\n")
+
+        # Display simulated trajectories
+        if epoch % 10 == 0
+            # Simulate the environment with a few trajectories
+            title_name = "Epoch: " * string(epoch)
+            s,p = render(env, s->actions(env)[argmax(Q(s))], title_name)
+            display(p) # State space plot
+            display(s) # Display the inertial path plot
+
+            # Plot the learning curve
+            display(data_plot(rewards_history, "Average Reward"))
+        end
+    end
+
+    # Save the model as previous trained model
+    save_model(Q, string("Q_prev_" + string(best_reward) + "_best_reward"))
+
+    return Q
+end
+
+function save_model(Q, filename)
+    # Save the model to a file
+    Flux.save(filename * ".bson", Q)
+end

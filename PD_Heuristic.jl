@@ -76,7 +76,7 @@ function calculate_gains(env)
 
     k_2 = [k1_rot]
     range_2 = LinRange(1*10^6, 5*10^6, 100)
-    #display(root_locus_plot(A_2, k_2, range_2, "Root Locus for K2"))
+    display(root_locus_plot(A_2, k_2, range_2, "Root Locus for K2"))
 
     #A(k) = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k(3)*k(4))/env.I -k(3)/env.I -k(1)/env.I -k(2)/env.I]
     function A_3(k)
@@ -86,7 +86,7 @@ function calculate_gains(env)
 
     k_3 = [k1_rot, k2_rot]
     range_3 = LinRange(0, 5*10^6, 100)
-    #display(root_locus_plot(A_3, k_3, range_3, "Root Locus for K3"))
+    display(root_locus_plot(A_3, k_3, range_3, "Root Locus for K3"))
 
     function A_4(k)
         A_mat = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k[3]*k[4])/env.I -k[3]/env.I -k[1]/env.I -k[2]/env.I]
@@ -95,7 +95,7 @@ function calculate_gains(env)
 
     k_4 = [k1_rot, k2_rot, k3_rot]
     range_4 = LinRange(0, 5*10^0, 1000)
-    #display(root_locus_plot(A_4, k_4, range_4, "Root Locus for K4"))
+    display(root_locus_plot(A_4, k_4, range_4, "Root Locus for K4"))
 
 
     ######## Thrust Gains ########
@@ -120,8 +120,8 @@ function heuristic_policy(s)
 
     A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot*k3_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
 
-    λ_1th = -1/17
-    λ_2th = -1/2
+    λ_1th = -1/20
+    λ_2th = -1/1
     k1_thrust = (λ_1th * λ_2th)*env.m
     k2_thrust = -(λ_1th + λ_2th)*env.m
 
@@ -129,15 +129,74 @@ function heuristic_policy(s)
     x, y, x_dot, y_dot, theta, theta_dot, t = s
 
     if t < 80 #seconds
-        y_ref = env.bounds[4]
+        y_ref = env.bounds[4]/1.1
     else
         y_ref = 0
     end
 
     # If the rocket is not above the landing pad, move to the left or right
     torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
-    thrust = -k1_thrust*(y - y_ref) - k2_thrust*y_dot
+    thrust = max(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0)
 
     return [thrust, torque]
 
 end
+
+function heuristic_policy(s, k)
+    # Unpack the state
+    x, y, x_dot, y_dot, theta, theta_dot, t = s
+
+    # Unpack the gains
+    k1_rot, k2_rot, k3_rot, k4_rot, k1_thrust, k2_thrust = k
+
+    # Set the reference height
+    y_ref = 0.0
+
+    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
+    thrust = max(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0)
+
+    return [thrust, torque]
+end
+
+function PD_Solve(env)
+    # Solve the environment using a PD controller
+    # Inputs
+        # env: The environment to solve
+    # Outputs
+        # policy: The policy to solve the environment
+    
+    # Gains = [k1_rot, k2_rot, k3_rot, k4_rot, k1_thrust, k2_thrust]
+    k = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Define a neural network to approximate the gain values
+    Q = Chain(Dense(length(observe(env)), 128, relu),
+            Dense(128, length(k)))
+
+
+    # Epsilon Greedy Policy
+    function policy(s, epsilon=0.1)
+        return heuristic_policy(s, Q(s))
+    end
+
+    # Gain experience function, appends the buffer
+    function experience(buffer, n)
+        # Loop through n steps in the environment and add to the buffer
+        for i = 1:n
+
+            done = terminated(env)
+            if done  # Break if a terminal state is reached
+                break
+            end
+            s = observe(env)
+            a_ind = policy(s)
+            r = act!(env, actions(env)[a_ind])
+            sp = observe(env)
+            experience_tuple = (s, a_ind, r, sp, done)
+            push!(buffer, experience_tuple)                 # Add to the experience
+        end
+        return buffer
+    end
+
+    return Q
+end
+
