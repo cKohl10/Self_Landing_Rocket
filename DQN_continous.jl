@@ -127,7 +127,7 @@ end
 
 ## Function approximator based on the PD heuristic
 # Create a neural network to approximate the torque and thrust given a state
-function DPD_Continuous(env)
+function DPD_Continuous(env, heuristic)
 
     print("Training DPD Model...\n")
     reset!(env)
@@ -140,6 +140,9 @@ function DPD_Continuous(env)
     # heuristic_policy(s)
 
     # Simulate with the controller to get data
-    
+
 
 end
+
+
+
