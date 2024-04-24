@@ -135,7 +135,8 @@ function DPD_Continuous(env, heuristic)
             Dense(128, 2))
 
     # HYPERPARAMETERS
-    epochs = 1000
+    epochs = 10
+    maxSteps = 10000
 
     # Define loss function and optimizer
     loss(x, y) = Flux.mse(model(x), y)  # Mean square error
@@ -167,9 +168,15 @@ function DPD_Continuous(env, heuristic)
     # Simulate with the controller to get data
     for i in 1:epochs
         # Simulate to get data and train the model
+        inputData, outputData = experience(maxSteps)
+
+        # Combine Data
+        trainData = [(inputData, outputData)]
+
+        # Train
 
 
-
+        print("Epoch: ", i, "\n")
     end
 end
 

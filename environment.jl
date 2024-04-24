@@ -384,6 +384,27 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
     return total_reward
 end
 
+
+# Simulate and return a history for an episode
+function episode!(env::RocketEnv2D, policy::Function, max_steps::Int)
+    inputData = []
+    outputData = []
+    # Loop through n steps in the environment and add to the buffer
+    reset!(env)
+    for i = 1:max_steps
+        done = terminated(env)
+        if done  # Break if a terminal state is reached
+            break
+        end
+        s = observe(env)
+        thrust, torque = policy(s)
+        r = act!(env, [thrust, torque])
+        push!(inputData, s)                     # State Data
+        push!(outputData, [thrust, torque])     # Output thrust and torque
+    end
+    return inputData, outputData
+end
+
 ################################################################
 
 ################# Custom Functions #############################
