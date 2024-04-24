@@ -1,14 +1,14 @@
 using Flux
 
 # DQN Function
-function DQN_Solve(env)
+function DQN_Solve_Continuous(env)
 
     print("Training DQN Model...\n")
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(actions(env)), 128, relu),
-            Dense(128, length(actions(env))))
+    Q = Chain(Dense(length(observe(env)), 128, relu),
+            Dense(128, 2))
     Q_target = deepcopy(Q)
 
     # HYPERPARAMETERS
@@ -21,9 +21,9 @@ function DQN_Solve(env)
     # Epsilon Greedy Policy
     function policy(s, epsilon=0.1)
         if rand() < epsilon
-            return rand(1:length(actions(env)))
+            return [rand_float(-env.thrust, env.thrust), rand_float(-env.torque, env.torque)]
         else
-            return argmax(Q(s))
+            return Q(s)
         end
     end
 
@@ -37,10 +37,10 @@ function DQN_Solve(env)
                 break
             end
             s = observe(env)
-            a_ind = policy(s)
-            r = act!(env, actions(env)[a_ind])
+            thrust, torque = policy(s)
+            r = act!(env, [thrust, torque])
             sp = observe(env)
-            experience_tuple = (s, a_ind, r, sp, done)
+            experience_tuple = (s, r, sp, done)
             push!(buffer, experience_tuple)                 # Add to the experience
         end
         return buffer
@@ -75,15 +75,15 @@ function DQN_Solve(env)
 
         # Copy Q network and define the loss function
         Q_target = deepcopy(Q)
-        function loss(Q, s, a_ind, r, sp, done)
+        function loss(Q, s, r, sp, done)
             # Discount factor
             g = 0.99
             # Reached terminal state
             if done
-                return (r - Q(s)[a_ind])^2
+                return (r - Q(s))^2
             end
             # DQN Loss Function
-            return (r + g*maximum(Q_target(sp)) - Q(s)[a_ind])^2
+            return (r + g*Q_target(sp) - Q(s))^2
         end
 
         # Get random data from the buffer
@@ -110,7 +110,7 @@ function DQN_Solve(env)
         if epoch % 10 == 0
             # Simulate the environment with a few trajectories
             title_name = "Epoch: " * string(epoch)
-            display(render(env, s->actions(env)[argmax(Q(s))], title_name))
+            display(render(env, s->Q(s), title_name))
 
             # Plot the learning curve
             display(data_plot(rewards_history, "Average Reward"))
@@ -118,30 +118,4 @@ function DQN_Solve(env)
     end
 
     return Q
-end
-
-function heuristic_policy(s)
-
-    # Hyperparameters
-    k1_rot = 0.1
-    k2_rot = 0.1
-    k3_rot = 0.1
-
-    k1_thrust = 0.1
-    k2_thrust = 0.1
-
-    # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot = s
-
-    # If the rocket is not above the landing pad, move to the left or right
-    if abs(x) > 100
-        torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x
-        thrust = env.m*9.81
-    else
-        thrust = -k1_thrust*y_dot - k2_thrust*y
-        torque = 0.0
-    end
-
-    return [thrust, torque]
-
 end

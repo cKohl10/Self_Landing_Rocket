@@ -36,7 +36,7 @@ display(state_plots)
 display(total_plots)
 
 # Train a DQN model
-Q = DQN_Solve(env)
+#Q = DQN_Solve(env)
 
 # Define basic policy
 policy = state -> begin

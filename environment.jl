@@ -69,7 +69,7 @@ function reward(env::RocketEnv2D)
 
     # Return a negative reward for going out of bounds
     if x < env.bounds[1] || x > env.bounds[2] || y > env.bounds[4]*1.5
-        return -1000.0
+        return -200
     end
 
     # A step in the environment is a small negative reward
@@ -157,9 +157,9 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
     x += x_dot * env.dt
     y += y_dot * env.dt
     x_dot += (thrust * cos(theta + pi/2) / m) * env.dt
-    y_dot += (thrust * sin(theta + pi/2) / m) * env.dt - 9.8 * env.dt
+    y_dot += (thrust * sin(theta + pi/2) / m) * env.dt - 9.81 * env.dt
     theta += theta_dot * env.dt
-    theta_dot += (torque / env.I) * env.dt
+    theta_dot += (torque / env.I)*env.dt
 
     # Update the state
     env.state = [x, y, x_dot, y_dot, theta, theta_dot]
@@ -200,7 +200,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
 
     for i in 1:n
         # Simulate the trajectory
-        state, total_reward = simulate_trajectory!(env, s->[0.0 * env.thrust, 0.0 * env.torque], 1000)
+        state, total_reward = simulate_trajectory!(env, heuristic_policy, 1000)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
