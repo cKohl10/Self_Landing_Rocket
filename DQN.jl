@@ -42,7 +42,8 @@ function DQN_Solve(env)
             torque = 0.0
         end
         actions = [thrust,torque]
-        return actions
+        actions_index = findfirst(x -> x == actions, actions(env))
+        return actions_index
     end
     # Epsilon Greedy Policy
     function policy(s, epsilon=0.1)
