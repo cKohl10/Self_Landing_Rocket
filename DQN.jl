@@ -8,7 +8,7 @@ function DQN_Solve(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(actions(env)), 128, relu),
+    Q = Chain(Dense(length(observe(env)), 128, relu),
             Dense(128, length(actions(env))))
     Q_target = deepcopy(Q)
 
@@ -18,6 +18,30 @@ function DQN_Solve(env)
     n = 10000
     epochs = 1000
     num_eps = 100   # For evaluate function
+
+    function discrete_policy_distance_metric(s)
+        thrust_cont, torque_cont = heuristic_policy(s)
+
+        # Normalize the continuous thrust and torque into a vector
+        thrust_cont = thrust_cont / env.thrust
+        torque_cont = torque_cont / env.torque
+        cont_vec = [thrust_cont, torque_cont]
+
+        # Compare using the Euclidean distance to the possible actions
+        min_dist = Inf
+        min_ind = 0
+        for (i, a) in enumerate(actions(env))
+            a = a / [env.thrust, env.torque]
+            dist = norm(a - cont_vec)
+            if dist < min_dist
+                min_dist = dist
+                min_ind = i
+            end
+        end
+
+        return min_ind
+
+    end
 
     # Define Huristic policy by using controler and taking the closest value
     function discrete_policy(s)
