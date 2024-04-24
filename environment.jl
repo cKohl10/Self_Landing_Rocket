@@ -62,7 +62,7 @@ function reward(env::RocketEnv2D)
     end
 
     # A step in the environment is a small negative reward
-    reward = -1
+    reward = -1*env.dt
 
     return reward
 end
