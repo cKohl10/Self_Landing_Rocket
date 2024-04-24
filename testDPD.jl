@@ -38,9 +38,9 @@ print("Calculating Gains...\n")
 calculate_gains(env)
 
 # Test the render function
-total_plots, state_plots = render(env)
-display(state_plots)
-display(total_plots)
+# total_plots, state_plots = render(env)
+# display(state_plots)
+# display(total_plots)
 
 # Train a DQN model
 #Q = DQN_Solve(env)
@@ -65,13 +65,15 @@ end
 max_steps = 10000
 numEps = 100
 nothingReward = mean([simulate!(env, policy, max_steps) for _ in 1:numEps])
+heuristicReward = mean([simulate!(env, heuristic_policy, max_steps) for _ in 1:numEps])
 DPDReward = mean([simulate!(env, policy, max_steps) for _ in 1:numEps])
 print("Nothing Average Reward: ", nothingReward, '\n')
+print("Heuristic Average Reward: ", heuristicReward, '\n')
 print("DPD Total Reward: ", DPDReward, '\n')
 
 
 # Plot results
-render(env, policy, "Do Nothing")
+#render(env, policy, "Do Nothing")
 #render(env, netPolicy, "DPD Function Approximation")
 
 

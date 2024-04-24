@@ -154,7 +154,15 @@ function DPD_Continuous(env, heuristic)
         # Train
         Flux.train!(loss, net, data, opt)
 
-        print("Epoch: ", i, "\n")
+        # Create policy
+        function netPolicy(s)
+            return convert(Vector{Float64}, net(s))
+        end
+
+        # Calculate the reward
+        DPDReward = mean([simulate!(env, policy, max_steps) for _ in 1:100])
+
+        print("Epoch: ", i, " Average Reward: ", DPDReward, "\n")
     end
 
     return net

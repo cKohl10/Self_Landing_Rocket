@@ -100,7 +100,8 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      # Initialize the state to the top of the environment
      width = (bounds[2] - bounds[1]) # Middle of the environment
      width_scale = 0.1 # Scale the width of spawn points
-     env.state = [rand_float(bounds[1], bounds[2]), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0, 0.0]
+     #env.state = [rand_float(bounds[1], bounds[2]), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0, 0.0]
+     env.state = [bounds[1]+width*width_scale, bounds[4], 0.0, -2*max_y_dot, max_angle, 0.0, 0.0]
 end
 
 # Returns the actions in the environment
@@ -256,7 +257,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
     plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
 
     # Simulate n trajectories and plot the results
-    n = 1
+    n = 10
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
     arrow_scale = 5000.0
