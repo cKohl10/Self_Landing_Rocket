@@ -68,5 +68,3 @@ function eval(policy, num_eps)
     # Return the average reward per episode
     return totReward / num_eps
 end
-
-
