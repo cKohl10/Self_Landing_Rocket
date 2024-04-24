@@ -62,8 +62,6 @@ end
 
 function calculate_gains(env)
     # Hyperparameters
-    ζ_rot = 1.2
-    ω_n_rot = 0.1 # Natural frequency Hz
     λ_1 = -1/2
     λ_2 = -1/0.2
     @show k1_rot = (λ_1 * λ_2)*env.I
@@ -78,7 +76,7 @@ function calculate_gains(env)
 
     k_2 = [k1_rot]
     range_2 = LinRange(1*10^6, 5*10^6, 100)
-    display(root_locus_plot(A_2, k_2, range_2, "Root Locus for K2"))
+    #display(root_locus_plot(A_2, k_2, range_2, "Root Locus for K2"))
 
     #A(k) = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k(3)*k(4))/env.I -k(3)/env.I -k(1)/env.I -k(2)/env.I]
     function A_3(k)
@@ -88,16 +86,23 @@ function calculate_gains(env)
 
     k_3 = [k1_rot, k2_rot]
     range_3 = LinRange(0, 5*10^6, 100)
-    display(root_locus_plot(A_3, k_3, range_3, "Root Locus for K3"))
+    #display(root_locus_plot(A_3, k_3, range_3, "Root Locus for K3"))
 
     function A_4(k)
-        A_mat = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -k[4]/env.I -k[3]/env.I -k[1]/env.I -k[2]/env.I]
+        A_mat = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k[3]*k[4])/env.I -k[3]/env.I -k[1]/env.I -k[2]/env.I]
         return A_mat
     end
 
     k_4 = [k1_rot, k2_rot, k3_rot]
-    range_4 = LinRange(0, 5*10^6, 100)
-    display(root_locus_plot(A_4, k_4, range_4, "Root Locus for K4"))
+    range_4 = LinRange(0, 5*10^0, 1000)
+    #display(root_locus_plot(A_4, k_4, range_4, "Root Locus for K4"))
+
+
+    ######## Thrust Gains ########
+    λ_1th = -1/2
+    λ_2th = -1/0.2
+    @show k1_thrust = (λ_1th * λ_2th)*env.m
+    @show k2_thrust = -(λ_1th + λ_2th)*env.m
 
 end
 
@@ -111,19 +116,27 @@ function heuristic_policy(s)
     k1_rot = (λ_1 * λ_2)*env.I
     k2_rot = -(λ_1 + λ_2)*env.I
     k3_rot = -2 * 10^5
-    k4_rot = 3 * 10^2
+    k4_rot = 0.02
 
-    A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
+    A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot*k3_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
 
-    k1_thrust = 0.1
-    k2_thrust = 0.1
+    λ_1th = -1/20
+    λ_2th = -1/2
+    k1_thrust = (λ_1th * λ_2th)*env.m
+    k2_thrust = -(λ_1th + λ_2th)*env.m
 
     # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot = s
+    x, y, x_dot, y_dot, theta, theta_dot, t = s
+
+    if t < 100 #seconds
+        y_ref = env.bounds[4]
+    else
+        y_ref = 0
+    end
 
     # If the rocket is not above the landing pad, move to the left or right
-    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*x
-    thrust = env.m*9.81
+    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
+    thrust = -k1_thrust*(y - y_ref) - k2_thrust*y_dot
 
     return [thrust, torque]
 
