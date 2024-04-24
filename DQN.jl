@@ -123,32 +123,3 @@ function DQN_Solve(env)
 
     return Q
 end
-
-function heuristic_policy(s)
-
-    # Hyperparameters
-    ζ_rot = 1.2
-    ω_n_rot = 0.1 # Natural frequency Hz
-    λ_1 = -1/2
-    λ_2 = -1/0.2
-    k1_rot = (λ_1 * λ_2)*env.I
-    k2_rot = -(λ_1 + λ_2)*env.I
-    k3_rot = 0.0
-    k4_rot = 0.0
-
-    A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k3_rot*k4_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
-    @show eigvals(A)
-
-    k1_thrust = 0.1
-    k2_thrust = 0.1
-
-    # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot = s
-
-    # If the rocket is not above the landing pad, move to the left or right
-    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
-    thrust = env.m*9.81
-
-    return [thrust, torque]
-
-end

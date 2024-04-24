@@ -128,7 +128,7 @@ function heuristic_policy(s)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot, t = s
 
-    if t < 100 #seconds
+    if t < 80 #seconds
         y_ref = env.bounds[4]
     else
         y_ref = 0
