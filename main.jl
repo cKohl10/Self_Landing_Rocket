@@ -16,7 +16,7 @@ include("DQN.jl")
 
 # Environment parameters
 x_max = 1000.0 # m
-y_max = 50000.0 # m
+y_max = 5000.0 # m
 dt = 0.1 # s
 
 # Rocket parameters
@@ -36,7 +36,7 @@ display(state_plots)
 display(total_plots)
 
 # Train a DQN model
-Q = DQN_Solve(env)
+#Q = DQN_Solve(env)
 
 # Define basic policy
 policy = state -> begin
