@@ -138,41 +138,35 @@ function DPD_Continuous(env, heuristic)
     epochs = 1000
 
     # Define loss function and optimizer
-    loss(x, y) = Flux.mse(model(x), y)
+    loss(x, y) = Flux.mse(model(x), y)  # Mean square error
     optimizer = Flux.ADAM(0.01)
 
-
-    # Prepare data for training
-    data = [(input_data[i, :], output_data[i, :]) for i in 1:num_samples]
-
-    # Training loop
-    @epochs 10 Flux.train!(loss, params(model), data, optimizer)
-
-
-    # Gain experience function, appends the buffer
-    function experience(buffer, n)
+    # Simulate and gather data
+    function experience(n)
+        inputData = []
+        outputData = []
         # Loop through n steps in the environment and add to the buffer
+        reset!(env)
         for i = 1:n
-
             done = terminated(env)
             if done  # Break if a terminal state is reached
                 break
             end
             s = observe(env)
-            thrust, torque = policy(s)
+            thrust, torque = heuristic(s)
             r = act!(env, [thrust, torque])
-            sp = observe(env)
-            experience_tuple = (s, r, sp, done)
-            push!(buffer, experience_tuple)                 # Add to the experience
+            push!(inputData, s)                     # State Data
+            push!(outputData, [thrust, torque])     # Heuristic thrust and torque
         end
-        return buffer
+        return inputData, outputData
     end
 
-    # heuristic_policy(s) # Outputs the thrust and torque given a current state
+    # Prepare data for training
+    data = [(input_data[i, :], output_data[i, :]) for i in 1:num_samples]
 
     # Simulate with the controller to get data
     for i in 1:epochs
-
+        # Simulate to get data and train the model
 
 
 

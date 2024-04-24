@@ -20,7 +20,7 @@ mutable struct RocketEnv2D
     ####################
 
     #### State Space ####
-    # [x, y, x_dot, y_dot, theta, theta_dot]
+    # [x, y, x_dot, y_dot, theta, theta_dot, time]
     # theta is defined as 0 when the rocket is upright
     state::Vector{Float64}
 
@@ -101,7 +101,6 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      width = (bounds[2] - bounds[1]) # Middle of the environment
      width_scale = 0.1 # Scale the width of spawn points
      env.state = [rand_float(bounds[1], bounds[2]), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0, 0.0]
-     #env.state = [bounds[1] + width_scale * width, bounds[4], max_x_dot/2, -max_y_dot/4, -max_angle, 0.0, 0.0]    # Start with a constant starting location and velocity
 end
 
 # Returns the actions in the environment
