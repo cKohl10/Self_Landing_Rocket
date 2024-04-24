@@ -16,7 +16,7 @@ include("DQN.jl")
 
 # Environment parameters
 x_max = 1000.0 # m
-y_max = 5000.0 # m
+y_max = 50000.0 # m
 dt = 0.1 # s
 
 # Rocket parameters

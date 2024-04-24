@@ -15,7 +15,7 @@ function reward_to_color(reward)
     return color
 end
 
-function state_plot(p, states, color)
+function state_plot(p, states, actions, color)
     # This will create a plot of the ydot, theta, and theta_dot states as a layout plot with 3 subplots
     # The x-axis will be the time step and the y-axis will be the value of the state
     # states = [x, y, x_dot, y_dot, theta, theta_dot]
@@ -28,6 +28,12 @@ function state_plot(p, states, color)
 
     # Create a plot for the theta_dot state
     plot!(p[3], [s[6] for s in states], color=color, label=nothing, xlabel="Time Step", ylabel="Angular Velocity")
+
+    # Create a plot for the thrust
+    plot!(p[4], [a[1] for a in actions], color=color, label=nothing, xlabel="Time Step", ylabel="Thrust")
+
+    # Create a plot for the torque
+    plot!(p[5], [a[2] for a in actions], color=color, label=nothing, xlabel="Time Step", ylabel="Torque")
 
     return p
     

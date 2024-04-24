@@ -196,11 +196,11 @@ function CommonRLInterface.render(env::RocketEnv2D)
     arrow_scale = 5000.0
 
     # Create a new plot for the states over time
-    p = plot(layout=(3,1), size=(800, 600))
+    p = plot(layout=(5,1), size=(800, 600))
 
     for i in 1:n
         # Simulate the trajectory
-        state, total_reward = simulate_trajectory!(env, heuristic_policy, 1000)
+        state, total_reward, actions = simulate_trajectory!(env, heuristic_policy, 10000)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
@@ -226,7 +226,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
         end
 
         # Plot the state over time
-        p = state_plot(p, state, reward_to_color(total_reward))
+        p = state_plot(p, state, actions, reward_to_color(total_reward))
     end
 
     return s, p
@@ -313,11 +313,14 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
 
     # Append s to a list of all states over the entire simulation
     states = [s]
+    actions = []
 
     # Loop through the simulation
     for i in 1:max_steps
         # Get the action from the policy
+        s = CommonRLInterface.observe(env)
         a = policy(s)
+        push!(actions, a)
 
         # Step in the environment
         CommonRLInterface.act!(env, a)
@@ -340,7 +343,7 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
     #println("Total Reward: ", total_reward)
     #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
 
-    return states, total_reward
+    return states, total_reward, actions
 end
 
 function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
