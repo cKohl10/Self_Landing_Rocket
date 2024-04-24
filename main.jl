@@ -22,7 +22,7 @@ y_max = 5000.0 # m
 dt = 0.1 # s
 
 # Rocket parameters
-thrust = 30.0 * 10^3 #N
+thrust = 50.0 * 10^3 #N
 torque = 100.0 * 10^3 #Nm
 m = 3000.0 #kg
 h = 50.0 # m height of rocket
@@ -36,13 +36,14 @@ print_env(env)
 #print("Calculating Gains...\n")
 #calculate_gains(env)
 
-# Test the render function
-# total_plots, state_plots = render(env)
-# display(state_plots)
-# display(total_plots)
+# Test the heuristic function
+total_plots, state_plots = render(env)
+display(state_plots)
+display(total_plots)
 
 # Train a DQN model
-Q = DQN_Solve(env)
+# Q = DQN_Solve(env)
+Q = DQN_Solve_Metric(env)
 
 # Define basic policy
 policy = state -> begin
