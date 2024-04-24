@@ -22,8 +22,8 @@ y_max = 5000.0 # m
 dt = 0.1 # s
 
 # Rocket parameters
-thrust = 100.0 * 10^3 #kN
-torque = 5.0 * 10^3 #kNm
+thrust = 30.0 * 10^3 #N
+torque = 100.0 * 10^3 #Nm
 m = 3000.0 #kg
 h = 50.0 # m height of rocket
 I = (1.0/12.0)*m*(h^2) #kg*m^2 using simple rod model
