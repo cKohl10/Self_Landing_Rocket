@@ -43,7 +43,7 @@ function reward(env::RocketEnv2D)
     # Landing defined as hitting the ground
     if y <= 0.0
         # Reward for landing on the target
-        reward = 50 * exp(-((x - x_target)^2) / (2 * 100^2))
+        reward = 100 * exp(-((x - x_target)^2) / (2 * 100^2))
         crash_vel = 5.0 #m/s
 
         # Add the reward for landing upright

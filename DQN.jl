@@ -13,9 +13,10 @@ function DQN_Solve(env)
     Q_target = deepcopy(Q)
 
     # HYPERPARAMETERS
-    bufferSize = 5000
+    bufferSize = 50000
     epsilon = 0.1
     n = 10000
+    batch_size = 2000
     epochs = 100
     num_eps = 100   # For evaluate function
 
@@ -63,7 +64,6 @@ function DQN_Solve(env)
     function experience(buffer, n)
         # Loop through n steps in the environment and add to the buffer
         for i = 1:n
-
             done = terminated(env)
             if done  # Break if a terminal state is reached
                 break
@@ -122,7 +122,7 @@ function DQN_Solve(env)
         end
 
         # Get random data from the buffer
-        data = rand(buffer, 2000)
+        data = rand(buffer, batch_size)
 
         # Train based on random data in the buffer
         Flux.Optimise.train!(loss, Q, data, opt)
