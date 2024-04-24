@@ -119,3 +119,27 @@ function DQN_Solve_Continuous(env)
 
     return Q
 end
+
+
+
+
+
+
+## Function approximator based on the PD heuristic
+# Create a neural network to approximate the torque and thrust given a state
+function DPD_Continuous(env)
+
+    print("Training DPD Model...\n")
+    reset!(env)
+
+    # Deep action network to approximate thrust and torque
+    Q = Chain(Dense(length(observe(env)), 128, relu),
+            Dense(128, 2))
+
+    
+    # heuristic_policy(s)
+
+    # Simulate with the controller to get data
+    
+
+end

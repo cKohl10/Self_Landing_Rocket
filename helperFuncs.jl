@@ -57,3 +57,16 @@ function data_plot(data, label)
     ylabel!(label)
     display(p)
 end
+
+
+# Evaluate function, calculates the average reward using the simulate function for a given number of episodes
+function eval(policy, num_eps)
+    totReward = 0
+    for _ in 1:num_eps
+        totReward += simulate!(env, policy, n)
+    end
+    # Return the average reward per episode
+    return totReward / num_eps
+end
+
+
