@@ -39,41 +39,30 @@ end
 function reward(env::RocketEnv2D)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot = env.state
-
+    x_target = env.target
     # Landing defined as hitting the ground
     if y <= 0.0
-        base_reward = 100.0
-        crash_vel = 2.0 #m/s
-
-        # Add the reward for landing on the target (Normalized by the bounds of the environment)
-        reward = 0.0
-
-        # Add the reward for landing on the target
-        if abs(x - env.target) < 0.1 * (env.bounds[2] - env.bounds[1])
-            reward += base_reward
-        end
+        # Reward for landing on the target
+        reward = 50 * exp(-((x - x_target)^2) / (2 * 100^2))
+        crash_vel = 5.0 #m/s
 
         # Add the reward for landing upright
-        if abs(theta) < 0.1
-            reward += base_reward
+        if abs(theta) < 0.1 && abs(theta_dot) < 0.1
+            reward += 25
         end
-
         # Add the reward for low velocity
         if abs(x_dot) < crash_vel && abs(y_dot) < crash_vel
-            reward += base_reward
+            reward += 25
         end
-
         return reward
-
     end
-
     # Return a negative reward for going out of bounds
     if x < env.bounds[1] || x > env.bounds[2] || y > env.bounds[4]*1.5
         return -200
     end
 
     # A step in the environment is a small negative reward
-    reward = -1
+    reward = -1*env.dt
 
     return reward
 end
@@ -111,7 +100,8 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      # Initialize the state to the top of the environment
      midpoint = (bounds[2] - bounds[1]) / 2.0 # Middle of the environment
      width_scale = 0.5 # Scale the width of spawn points
-     env.state = [rand_float(bounds[1] + midpoint*(1 - width_scale), bounds[1] + midpoint*(1 + width_scale)), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0]
+     #env.state = [rand_float(bounds[1] + midpoint*(1 - width_scale), bounds[1] + midpoint*(1 + width_scale)), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0]
+     env.state = [bounds[1], bounds[4], max_x_dot/2, -max_y_dot/4, -max_angle, 0.0]    # Start with a constant starting location and velocity
 end
 
 # Returns the actions in the environment

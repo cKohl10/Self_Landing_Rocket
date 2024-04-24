@@ -8,7 +8,7 @@ function DQN_Solve(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(actions(env)), 128, relu),
+    Q = Chain(Dense(length(env.state), 128, relu),
             Dense(128, length(actions(env))))
     Q_target = deepcopy(Q)
 
@@ -120,9 +120,9 @@ function DQN_Solve(env)
             display(data_plot(rewards_history, "Average Reward"))
         end
     end
-
     return Q
 end
+
 
 function heuristic_policy(s)
 
