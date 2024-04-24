@@ -68,36 +68,3 @@ function eval(policy, num_eps)
     # Return the average reward per episode
     return totReward / num_eps
 end
-
-
-    # Define Huristic policy by using controler and taking the closest value
-    function discrete_policy(s)
-        discrete_action = []
-        actions_index = 0
-        a = heuristic_policy(s)
-        thrust_cont = a[1]
-        thrust_threshold = 1.2
-        torque_threshold = 1.2
-        torque_cont = a[2]
-        if env.thrust <= thrust_cont * thrust_threshold
-            thrust = env.thrust
-        else
-            thrust = 0.0
-        end
-        if abs(env.torque) <= abs(torque_cont) * torque_threshold
-            if torque_cont > 0
-                torque = env.torque
-            else
-                torque = -env.torque
-            end
-        else
-            torque = 0.0
-        end
-        discrete_action = [thrust,torque]
-        for i in 1:length(actions(env))
-            if discrete_action == actions(env)[i]
-                actions_index = i
-            end
-        end
-        return actions_index
-    end
