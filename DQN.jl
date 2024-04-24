@@ -8,7 +8,7 @@ function DQN_Solve(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(actions(env)), 128, relu),
+    Q = Chain(Dense(length(observe(env)), 128, relu),
             Dense(128, length(actions(env))))
     Q_target = deepcopy(Q)
 
@@ -16,12 +16,13 @@ function DQN_Solve(env)
     bufferSize = 5000
     epsilon = 0.1
     n = 10000
-    epochs = 1000
+    epochs = 100
     num_eps = 100   # For evaluate function
 
     # Define Huristic policy by using controler and taking the closest value
     function discrete_policy(s)
-        actions = []
+        discrete_actions = []
+        actions_index = 0
         a = heuristic_policy(s)
         thrust_cont = a[1]
         thrust_threshold = 1.2
@@ -41,8 +42,12 @@ function DQN_Solve(env)
         else
             torque = 0.0
         end
-        actions = [thrust,torque]
-        actions_index = findfirst(x -> x == actions, actions(env))
+        discrete_actions = [thrust,torque]
+        for i in 1:length(actions(env))
+            if discrete_actions == actions(env)[i]
+                actions_index = i
+            end
+        end
         return actions_index
     end
     # Epsilon Greedy Policy
