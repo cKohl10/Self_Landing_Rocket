@@ -20,7 +20,7 @@ mutable struct RocketEnv2D
     ####################
 
     #### State Space ####
-    # [x, y, x_dot, y_dot, theta, theta_dot]
+    # [x, y, x_dot, y_dot, theta, theta_dot, time]
     # theta is defined as 0 when the rocket is upright
     state::Vector{Float64}
 
@@ -93,15 +93,14 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
     bounds = env.bounds
     # Reset the environment to a random x position and the top of the y bounds, also random orientation
      ### Hyperparameters ###
-     max_angle = pi/2.0 # Maximum angle of the rocket spawn
-     max_x_dot = 10.0 # Maximum x velocity of the rocket spawn
-     max_y_dot = 200.0 # Maximum y velocity of the rocket spawn
+     max_angle = pi/4.0 # Maximum angle of the rocket spawn
+     max_x_dot = 5.0 # Maximum x velocity of the rocket spawn
+     max_y_dot = 100.0 # Maximum y velocity of the rocket spawn
      
      # Initialize the state to the top of the environment
      width = (bounds[2] - bounds[1]) # Middle of the environment
      width_scale = 0.1 # Scale the width of spawn points
-     #env.state = [rand_float(bounds[1] + midpoint*(1 - width_scale), bounds[1] + midpoint*(1 + width_scale)), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0]
-     env.state = [bounds[1] + width_scale * width, bounds[4], max_x_dot/2, -max_y_dot/4, -max_angle, 0.0, 0.0]    # Start with a constant starting location and velocity
+     env.state = [rand_float(bounds[1], bounds[2]), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0, 0.0]
 end
 
 # Returns the actions in the environment
@@ -184,7 +183,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
     n = 10
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
-    arrow_scale = 5000.0
+    arrow_scale = 1000.0
 
     function make_arrow!(arrow_scale, state)
         theta = state[5]
@@ -383,6 +382,27 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
         end
     end 
     return total_reward
+end
+
+
+# Simulate and return a history for an episode
+function episode!(env::RocketEnv2D, policy::Function, max_steps::Int)
+    inputData = []
+    outputData = []
+    # Loop through n steps in the environment and add to the buffer
+    reset!(env)
+    for i = 1:max_steps
+        done = terminated(env)
+        if done  # Break if a terminal state is reached
+            break
+        end
+        s = observe(env)
+        thrust, torque = policy(s)
+        r = act!(env, [thrust, torque])
+        push!(inputData, s)                     # State Data
+        push!(outputData, [thrust, torque])     # Output thrust and torque
+    end
+    return inputData, outputData
 end
 
 ################################################################

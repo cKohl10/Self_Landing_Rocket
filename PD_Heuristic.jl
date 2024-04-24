@@ -120,8 +120,8 @@ function heuristic_policy(s)
 
     A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot*k3_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
 
-    λ_1th = -1/30
-    λ_2th = -1/5
+    λ_1th = -1/17
+    λ_2th = -1/2
     k1_thrust = (λ_1th * λ_2th)*env.m
     k2_thrust = -(λ_1th + λ_2th)*env.m
 
