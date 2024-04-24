@@ -73,6 +73,9 @@ function DQN_Solve(env)
         # Set Optimizer
         opt = Flux.setup(ADAM(0.0005), Q)
 
+        # Gain experience
+        buffer = experience(buffer, n)
+
         # Copy Q network and define the loss function
         Q_target = deepcopy(Q)
         function loss(Q, s, a_ind, r, sp, done)
