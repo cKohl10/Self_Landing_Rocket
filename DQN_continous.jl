@@ -139,7 +139,8 @@ function DPD_Continuous(env, heuristic)
 
     # Define loss function and optimizer
     loss(model, x, y) = Flux.mse(model(x), y);
-    opt = Flux.ADAM(0.01)
+    #opt = Flux.ADAM(0.01)
+    opt = Flux.setup(Adam(0.01), net)
 
     # Simulate with the controller to get data
     for i in 1:epochs
@@ -148,9 +149,10 @@ function DPD_Continuous(env, heuristic)
 
         # Combine Data
         trainData = [(inputData, outputData)]
+        data = [(inputData[i], outputData[i]) for i in 1:length(inputData)]
 
         # Train
-        train!(loss, net, trainData, opt)
+        Flux.train!(loss, net, data, opt)
 
         print("Epoch: ", i, "\n")
     end
