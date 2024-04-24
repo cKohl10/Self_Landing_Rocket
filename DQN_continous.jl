@@ -123,8 +123,6 @@ end
 
 
 
-
-
 ## Function approximator based on the PD heuristic
 # Create a neural network to approximate the torque and thrust given a state
 function DPD_Continuous(env, heuristic)
@@ -133,15 +131,52 @@ function DPD_Continuous(env, heuristic)
     reset!(env)
 
     # Deep action network to approximate thrust and torque
-    Q = Chain(Dense(length(observe(env)), 128, relu),
+    model = Chain(Dense(length(observe(env)), 128, relu),
             Dense(128, 2))
 
-    
-    # heuristic_policy(s)
+    # HYPERPARAMETERS
+    epochs = 1000
+
+    # Define loss function and optimizer
+    loss(x, y) = Flux.mse(model(x), y)
+    optimizer = Flux.ADAM(0.01)
+
+
+    # Prepare data for training
+    data = [(input_data[i, :], output_data[i, :]) for i in 1:num_samples]
+
+    # Training loop
+    @epochs 10 Flux.train!(loss, params(model), data, optimizer)
+
+
+    # Gain experience function, appends the buffer
+    function experience(buffer, n)
+        # Loop through n steps in the environment and add to the buffer
+        for i = 1:n
+
+            done = terminated(env)
+            if done  # Break if a terminal state is reached
+                break
+            end
+            s = observe(env)
+            thrust, torque = policy(s)
+            r = act!(env, [thrust, torque])
+            sp = observe(env)
+            experience_tuple = (s, r, sp, done)
+            push!(buffer, experience_tuple)                 # Add to the experience
+        end
+        return buffer
+    end
+
+    # heuristic_policy(s) # Outputs the thrust and torque given a current state
 
     # Simulate with the controller to get data
+    for i in 1:epochs
 
 
+
+
+    end
 end
 
 
