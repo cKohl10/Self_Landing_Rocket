@@ -39,34 +39,23 @@ end
 function reward(env::RocketEnv2D)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot = env.state
-
+    x_target = env.target
     # Landing defined as hitting the ground
     if y <= 0.0
-        base_reward = 100.0
-        crash_vel = 2.0 #m/s
-
-        # Add the reward for landing on the target (Normalized by the bounds of the environment)
-        reward = 0.0
-
-        # Add the reward for landing on the target
-        if abs(x - env.target) < 0.1 * (env.bounds[2] - env.bounds[1])
-            reward += base_reward
-        end
+        # Reward for landing on the target
+        reward = 50 * exp(-((x - x_target)^2) / (2 * 100^2))
+        crash_vel = 5.0 #m/s
 
         # Add the reward for landing upright
-        if abs(theta) < 0.1
-            reward += base_reward
+        if abs(theta) < 0.1 && abs(theta_dot) < 0.1
+            reward += 25
         end
-
         # Add the reward for low velocity
         if abs(x_dot) < crash_vel && abs(y_dot) < crash_vel
-            reward += base_reward
+            reward += 25
         end
-
         return reward
-
     end
-
     # Return a negative reward for going out of bounds
     if x < env.bounds[1] || x > env.bounds[2] || y > env.bounds[4]*1.5
         return -200
