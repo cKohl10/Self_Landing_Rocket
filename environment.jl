@@ -74,12 +74,12 @@ function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torq
     action_space = [[thrust, torque], [thrust, -torque], [thrust, 0.0], [0.0, torque], [0.0, -torque], [0.0, 0.0]]
 
     # Make the target in the middle of the environment
-    target = (bounds[2] - bounds[1]) / 2.0
+    target = ((bounds[2] - bounds[1]) / 2.0) + bounds[1]
 
     # Discount factor
     γ = 1.0
 
-    R = RocketEnv2D(bounds, dt, target, γ, thrust, torque, m, I, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], action_space)
+    R = RocketEnv2D(bounds, dt, target, γ, thrust, torque, m, I, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], action_space)
 
     CommonRLInterface.reset!(R) # Reset the environment's state
 
@@ -98,10 +98,10 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      max_y_dot = 200.0 # Maximum y velocity of the rocket spawn
      
      # Initialize the state to the top of the environment
-     midpoint = (bounds[2] - bounds[1]) / 2.0 # Middle of the environment
-     width_scale = 0.5 # Scale the width of spawn points
+     width = (bounds[2] - bounds[1]) # Middle of the environment
+     width_scale = 0.1 # Scale the width of spawn points
      #env.state = [rand_float(bounds[1] + midpoint*(1 - width_scale), bounds[1] + midpoint*(1 + width_scale)), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0]
-     env.state = [bounds[1], bounds[4], max_x_dot/2, -max_y_dot/4, -max_angle, 0.0]    # Start with a constant starting location and velocity
+     env.state = [bounds[1] + width_scale * width, bounds[4], max_x_dot/2, -max_y_dot/4, -max_angle, 0.0, 0.0]    # Start with a constant starting location and velocity
 end
 
 # Returns the actions in the environment
@@ -139,7 +139,7 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
 
     #### Update the State ####
     # Unpack the state and action
-    x, y, x_dot, y_dot, theta, theta_dot = env.state
+    x, y, x_dot, y_dot, theta, theta_dot, t = env.state
     thrust, torque = action
     m = env.m
 
@@ -150,9 +150,10 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Vector{Float64})
     y_dot += (thrust * sin(theta + pi/2) / m) * env.dt - 9.81 * env.dt
     theta += theta_dot * env.dt
     theta_dot += (torque / env.I)*env.dt
+    t += env.dt
 
     # Update the state
-    env.state = [x, y, x_dot, y_dot, theta, theta_dot]
+    env.state = [x, y, x_dot, y_dot, theta, theta_dot, t]
     ##########################
 
     #### Check for Boundaries ####
@@ -192,6 +193,12 @@ function CommonRLInterface.render(env::RocketEnv2D)
         # Simulate the trajectory
         state, total_reward, actions = simulate_trajectory!(env, heuristic_policy, 10000)
 
+        # Break if state is empty
+        if isempty(state)
+            println("State is empty")
+            break
+        end
+
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
 
@@ -199,7 +206,7 @@ function CommonRLInterface.render(env::RocketEnv2D)
         plot!(s, x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=2)
 
         # Calculate the interval at which to plot the arrows
-        interval = round(Int, length(x_traj) / num_arrows)
+        interval = Int(ceil(length(x_traj) / num_arrows))
 
         # Plot the arrows at regular intervals along the trajectory
         for i in 1:interval:length(x_traj)

@@ -16,8 +16,8 @@ include("DQN.jl")
 include("PD_Heuristic.jl")
 
 # Environment parameters
-x_min = -1000.0 # m
-x_max = 1000.0 # m
+x_min = -500.0 # m
+x_max = 500.0 # m
 y_max = 5000.0 # m
 dt = 0.1 # s
 
