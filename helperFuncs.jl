@@ -4,7 +4,7 @@ using Statistics
 function reward_to_color(reward)
     # Normalize the reward to a value between 0 and 1
     # its range is -500 to 300, so we add 500 and divide by 800
-    normalized_reward = (reward + 300) / 600
+    normalized_reward = (reward + 200) / 200
 
     # Create a color map that interpolates between red and green
     color_map = ColorSchemes.RdYlGn

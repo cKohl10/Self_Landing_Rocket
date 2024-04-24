@@ -33,8 +33,8 @@ env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, thrust, torque, m, I)
 print_env(env)
 
 # Calculate the gains for the PD controller heuristic
-print("Calculating Gains...\n")
-calculate_gains(env)
+#print("Calculating Gains...\n")
+#calculate_gains(env)
 
 # Test the render function
 total_plots, state_plots = render(env)
