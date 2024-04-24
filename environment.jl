@@ -186,6 +186,19 @@ function CommonRLInterface.render(env::RocketEnv2D)
     num_arrows = 7
     arrow_scale = 5000.0
 
+    function make_arrow!(arrow_scale, state)
+        theta = state[5]
+        # Calculate the magnitude of the velocity vector
+        velocity_magnitude = sqrt(state[3]^2 + state[4]^2)
+        # Normalize the velocity vector for 50 m/s
+        velocity_magnitude_x = (velocity_magnitude * (env.bounds[2] - env.bounds[1])) / arrow_scale
+        velocity_magnitude_y = (velocity_magnitude * (env.bounds[4] - env.bounds[3])) / arrow_scale
+
+        u = velocity_magnitude_x * cos(theta + pi/2)
+        v = velocity_magnitude_y * sin(theta + pi/2)
+        quiver!(s, [state[1]], [state[2]], quiver=([u], [v]), color="black")
+    end
+
     # Create a new plot for the states over time
     p = plot(layout=(5,1), size=(800, 600))
 
@@ -210,17 +223,11 @@ function CommonRLInterface.render(env::RocketEnv2D)
 
         # Plot the arrows at regular intervals along the trajectory
         for i in 1:interval:length(x_traj)
-            theta = state[i][5]
-            # Calculate the magnitude of the velocity vector
-            velocity_magnitude = sqrt(state[i][3]^2 + state[i][4]^2)
-            # Normalize the velocity vector for 50 m/s
-            velocity_magnitude_x = (velocity_magnitude * (env.bounds[2] - env.bounds[1])) / arrow_scale
-            velocity_magnitude_y = (velocity_magnitude * (env.bounds[4] - env.bounds[3])) / arrow_scale
-
-            u = velocity_magnitude_x * cos(theta + pi/2)
-            v = velocity_magnitude_y * sin(theta + pi/2)
-            quiver!(s, [x_traj[i]], [y_traj[i]], quiver=([u], [v]), color="black")
+            make_arrow!(arrow_scale, state[i])
         end
+
+        # Make an arrow at the end of the trajectory
+        make_arrow!(arrow_scale, state[end])
 
         # Plot the state over time
         p = state_plot(p, state, actions, reward_to_color(total_reward))
@@ -284,6 +291,8 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
             v = velocity_magnitude_y * sin(theta + pi/2)
             quiver!(s, [x_traj[i]], [y_traj[i]], quiver=([u], [v]), color="black")
         end
+
+
 
         # Plot the state over time
         #p = state_plot(p, state, reward_to_color(total_reward))
