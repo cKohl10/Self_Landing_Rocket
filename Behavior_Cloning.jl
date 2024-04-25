@@ -142,6 +142,17 @@ function DPD_Continuous(env, heuristic)
     #opt = Flux.ADAM(0.01)
     opt = Flux.setup(Adam(0.01), net)
 
+
+    # Function to append data with multiple episodes
+    function gatherData(data)
+        numEps = 100
+        for _ in 1:numEps
+            inputData, outputData = episode!(env, heuristic, maxSteps)
+            push!(data, [(inputData[i], outputData[i]) for i in 1:length(inputData)])
+        end
+        return data
+    end
+
     # Simulate with the controller to get data
     for i in 1:epochs
         # Simulate to get data and train the model
