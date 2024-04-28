@@ -16,12 +16,12 @@ function DQN_Solve(env)
 
     # HYPERPARAMETERS
     bufferSize = 50000
-    epsilon = 0.1
-    n = 10000
+    ϵ = 1
+    n = 100
     batch_size = 2000
-    epochs = 100
+    epochs = 10000
     num_eps = 100   # For evaluate function
-
+    ϵ_start = 1
     # Define Huristic policy by using controler and taking the closest value
     function discrete_policy(s)
         discrete_actions = []
@@ -63,15 +63,16 @@ function DQN_Solve(env)
     end
 
     # Gain experience function, appends the buffer
-    function experience(buffer, n)
+    function experience(buffer, n,ϵ=0.1)
         # Loop through n steps in the environment and add to the buffer
+        reset!(env)
         for i = 1:n
             done = terminated(env)
             if done  # Break if a terminal state is reached
                 break
             end
             s = observe(env)
-            a_ind = policy(s)
+            a_ind = policy(s,ϵ)
             r = act!(env, actions(env)[a_ind])
             sp = observe(env)
             experience_tuple = (s, a_ind, r, sp, done)
@@ -97,10 +98,15 @@ function DQN_Solve(env)
     # Instantiate the buffer, 1000 steps for each episode
     buffer = []
     rewards_history = []
-    buffer = experience(buffer, n)      # Initial buffer episode
-
+    count = 1
+    while (length(buffer)<=batch_size)
+        buffer = experience(buffer, n,ϵ_start)      # Initial buffer episode
+        ϵ_start = ϵ_start/count
+        count = count+1
+    end
     # Execute DQN Learning
     for epoch in 1:epochs
+        ϵ = ϵ/epoch
         # Rest the environment
         reset!(env)
 
@@ -246,6 +252,7 @@ function DQN_Solve_Metric(env)
 
         totReward = 0
         for _ in 1:num_eps
+            reset!(env)
             totReward += simulate!(env, Qpolicy, n)
         end
         # Return the average reward per episode

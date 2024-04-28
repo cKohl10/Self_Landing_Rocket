@@ -14,7 +14,7 @@ include("environment.jl")
 include("helperFuncs.jl")
 include("DQN.jl")
 include("PD_Heuristic.jl")
-include("DQN_continous.jl")
+include("Behavior_Cloning.jl")
 
 # Environment parameters
 x_min = -500.0 # m
@@ -35,7 +35,7 @@ print_env(env)
 
 # Calculate the gains for the PD controller heuristic
 print("Calculating Gains...\n")
-calculate_gains(env)
+#calculate_gains(env)
 
 # Test the render function
 # total_plots, state_plots = render(env)
@@ -48,7 +48,7 @@ calculate_gains(env)
 
 # Test NNet action approximator
 inputData, outputData = episode!(env, heuristic_policy, 10000)
-net = DPD_Continuous(env, heuristic_policy)
+net = CloneExpert(env, heuristic_policy)
 
 # Define basic policy
 policy = state -> begin
@@ -69,7 +69,7 @@ heuristicReward = mean([simulate!(env, heuristic_policy, max_steps) for _ in 1:n
 DPDReward = mean([simulate!(env, policy, max_steps) for _ in 1:numEps])
 print("Nothing Average Reward: ", nothingReward, '\n')
 print("Heuristic Average Reward: ", heuristicReward, '\n')
-print("DPD Total Reward: ", DPDReward, '\n')
+print("DAgger Total Reward: ", DPDReward, '\n')
 
 
 # Plot results

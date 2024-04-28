@@ -122,11 +122,12 @@ end
 
 
 
-## Function approximator based on the PD heuristic
+## Function approximator based on the expert PD controller
 # Create a neural network to approximate the torque and thrust given a state
-function DPD_Continuous(env, heuristic)
+# Uses DAgger to improve the approximation
+function CloneExpert(env, heuristic)
 
-    print("Training DPD Model...\n")
+    print("Training DAgger Model...\n")
     reset!(env)
 
     # Deep action network to approximate thrust and torque
@@ -134,24 +135,61 @@ function DPD_Continuous(env, heuristic)
             Dense(128, 2))
 
     # HYPERPARAMETERS
-    epochs = 10
-    maxSteps = 10000
+    maxSteps = 10000        # Max steps in the environment for episode calls
+    numEps = 1000           # Episodes for initial data set
+    daggerEPs = 10          # Addition simulations to augment data set
 
     # Define loss function and optimizer
     loss(model, x, y) = Flux.mse(model(x), y);
     #opt = Flux.ADAM(0.01)
     opt = Flux.setup(Adam(0.01), net)
+    
+    # Gather large initial data set for behavior cloning
+    inputData = []
+    outputData = []
+    for _ in 1:numEps
+        inEp, outEp = episode!(env, heuristic, maxSteps)
+        append!(inputData, inEp)
+        append!(outputData, outEp)
+    end
 
-    # Simulate with the controller to get data
-    for i in 1:epochs
-        # Simulate to get data and train the model
-        inputData, outputData = episode!(env, heuristic, maxSteps)
+    # Train with expert data set
+    print("Cloning Behavior...\n")
+    data = [(inputData[i], outputData[i]) for i in 1:length(inputData)]
+    Flux.train!(loss, net, data, opt)
+    print("Cloned Behavior, executing DAgger...\n")
 
-        # Combine Data
-        trainData = [(inputData, outputData)]
+    # DAgger to improve the neural net
+    for i in 1:daggerEPs
+        # Reset the environment
+        reset!(env)
+        for i = 1:maxSteps
+            # Expert data
+            inputData = []
+            outputData = []
+
+            # Check if terminated
+            done = terminated(env)
+            if done  # Break if a terminal state is reached
+                break
+            end
+
+            # Create policy from the network
+            function netPolicy(s)
+                return convert(Vector{Float64}, net(s))
+            end
+
+            # Act in the environment and collect data
+            s = observe(env)
+            thrustNet, torqueNet = netPolicy(s)
+            thrust, torque = heuristic(s)           # Expert data
+            r = act!(env, [thrustNet, torqueNet])   # Act with neural network
+            push!(inputData, s)                     # State Data
+            push!(outputData, [thrust, torque])     # Output thrust and torque from the heuristic to train
+        end
+
+        # Train with new expert data
         data = [(inputData[i], outputData[i]) for i in 1:length(inputData)]
-
-        # Train
         Flux.train!(loss, net, data, opt)
 
         # Create policy
@@ -160,11 +198,10 @@ function DPD_Continuous(env, heuristic)
         end
 
         # Calculate the reward
-        DPDReward = mean([simulate!(env, policy, max_steps) for _ in 1:100])
+        DAggerReward = mean([simulate!(env, netPolicy, maxSteps) for _ in 1:100])
 
-        print("Epoch: ", i, " Average Reward: ", DPDReward, "\n")
+        print("DAgger Epoch: ", i, " Average Reward: ", DAggerReward, "\n")
     end
-
     return net
 end
 
