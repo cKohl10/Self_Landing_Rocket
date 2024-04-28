@@ -135,10 +135,11 @@ function heuristic_policy(s)
     end
 
     # If the rocket is not above the landing pad, move to the left or right
-    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
-    thrust = max(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0)
+    torque = clamp(-k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x, -env.torque, env.torque)
+    thrust = clamp(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0.0, env.thrust)
 
     return [thrust, torque]
+    # return [0.0,0.0]
 
 end
 

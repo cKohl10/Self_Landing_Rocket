@@ -95,13 +95,20 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      ### Hyperparameters ###
      max_angle = pi/4.0 # Maximum angle of the rocket spawn
      max_x_dot = 5.0 # Maximum x velocity of the rocket spawn
-     max_y_dot = 100.0 # Maximum y velocity of the rocket spawn
+     max_y_dot = 20.0 # Maximum y velocity of the rocket spawn
      
      # Initialize the state to the top of the environment
      width = (bounds[2] - bounds[1]) # Middle of the environment
-     width_scale = 0.1 # Scale the width of spawn points
+     width_scale = 0.05 # Scale the width of spawn points
      #env.state = [rand_float(bounds[1], bounds[2]), bounds[4], rand_float(-max_x_dot, max_x_dot), rand_float(-max_y_dot, -max_y_dot*0.5), rand_float(-max_angle, max_angle), 0.0, 0.0]
-     env.state = [bounds[1]+width*width_scale, bounds[4], 0.0, -2*max_y_dot, max_angle, 0.0, 0.0]
+     #env.state = [bounds[1]+width*width_scale, bounds[4], max_x_dot, -2*max_y_dot, max_angle, 0.0, 0.0]
+     env.state = [rand_float(bounds[1]+width*width_scale, bounds[1]+width*2*width_scale), bounds[4] - rand_float(0.0, 20.0), max_x_dot + rand_float(-0.1*max_x_dot, 0.1*max_x_dot), -2*max_y_dot + rand_float(-0.1*max_y_dot, 0.1*max_y_dot), max_angle + rand_float(-0.05*max_angle, 0.05*max_angle), 0.0, 0.0]
+end
+
+function CommonRLInterface.reset!(env::RocketEnv2D, x, y)
+    bounds = env.bounds
+    # Reset the environment to a given x and y position
+    env.state = [x, y, 0.0, 0.0, 0.0, 0.0, 0.0]
 end
 
 # Returns the actions in the environment
@@ -202,35 +209,42 @@ function CommonRLInterface.render(env::RocketEnv2D)
     # Create a new plot for the states over time
     p = plot(layout=(5,1), size=(800, 600))
 
+    # Define the range of points to Test
+    x_width = env.bounds[2] - env.bounds[1]
+    y_width = env.bounds[4] - env.bounds[3]
+    A = CommonRLInterface.actions(env)
+
     for i in 1:n
-        # Simulate the trajectory
-        state, total_reward, actions = simulate_trajectory!(env, heuristic_policy, 10000)
+        for j in 1:n
+            # Simulate the trajectory
+            state, total_reward, actions = simulate_trajectory!(env, s->A[discrete_policy_distance_metric(s)], 10000, (i/n)*x_width + env.bounds[1], (j/n)*y_width + env.bounds[3])
 
-        # Break if state is empty
-        if isempty(state)
-            println("State is empty")
-            break
+            # Break if state is empty
+            if isempty(state)
+                println("State is empty")
+                break
+            end
+
+            x_traj = [s[1] for s in state]
+            y_traj = [s[2] for s in state]
+
+            # Plot the trajectory
+            plot!(s, x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=2)
+
+            # Calculate the interval at which to plot the arrows
+            interval = Int(ceil(length(x_traj) / num_arrows))
+
+            # Plot the arrows at regular intervals along the trajectory
+            for i in 1:interval:length(x_traj)
+                make_arrow!(arrow_scale, state[i])
+            end
+
+            # Make an arrow at the end of the trajectory
+            make_arrow!(arrow_scale, state[end])
+
+            # Plot the state over time
+            p = state_plot(p, state, actions, reward_to_color(total_reward))
         end
-
-        x_traj = [s[1] for s in state]
-        y_traj = [s[2] for s in state]
-
-        # Plot the trajectory
-        plot!(s, x_traj, y_traj, label=nothing, color=reward_to_color(total_reward), lw=2)
-
-        # Calculate the interval at which to plot the arrows
-        interval = Int(ceil(length(x_traj) / num_arrows))
-
-        # Plot the arrows at regular intervals along the trajectory
-        for i in 1:interval:length(x_traj)
-            make_arrow!(arrow_scale, state[i])
-        end
-
-        # Make an arrow at the end of the trajectory
-        make_arrow!(arrow_scale, state[end])
-
-        # Plot the state over time
-        p = state_plot(p, state, actions, reward_to_color(total_reward))
     end
 
     return s, p
@@ -257,7 +271,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
     plot!(s, [env.target - 0.1 * (env.bounds[2] - env.bounds[1]), env.target + 0.1 * (env.bounds[2] - env.bounds[1])], [0.0, 0.0], label=nothing, color="red", lw=2)
 
     # Simulate n trajectories and plot the results
-    n = 10
+    n = 1
     # Define the number of arrows to plot per trajectory
     num_arrows = 7
     arrow_scale = 2000.0
@@ -280,7 +294,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
 
     for i in 1:n
         # Simulate the trajectory
-        state, total_reward, actions = simulate_trajectory!(env, policy, 1000)
+        state, total_reward, actions = simulate_trajectory!(env, policy, 10000)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
@@ -318,6 +332,55 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
 
     # Reset the environment
     CommonRLInterface.reset!(env)
+    s = CommonRLInterface.observe(env)
+
+    #println("Initial State in Trajectory: $(round.(s; digits=2))")
+
+    # Append s to a list of all states over the entire simulation
+    states = [s]
+    actions = []
+
+    # Loop through the simulation
+    for i in 1:max_steps
+        # Get the action from the policy
+        s = CommonRLInterface.observe(env)
+        a = policy(s)
+        push!(actions, a)
+
+        # Step in the environment
+        CommonRLInterface.act!(env, a)
+
+        # Append the state to the list of states
+        push!(states, CommonRLInterface.observe(env))
+
+        # Get the reward
+        r = reward(env)
+
+        # Add the reward to the total
+        total_reward += γ^i * r
+
+        # Check if the environment is terminated
+        if CommonRLInterface.terminated(env)
+            break
+        end
+    end 
+
+    #println("Total Reward: ", total_reward)
+    #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+
+    return states, total_reward, actions
+end
+
+# Simulate starting from a specified x and y position
+function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int, x::Float64, y::Float64)
+    # Initialize the total reward
+    total_reward = 0.0
+
+    # Get the discount factor
+    γ = env.γ
+
+    # Reset the environment
+    CommonRLInterface.reset!(env, x, y)
     s = CommonRLInterface.observe(env)
 
     #println("Initial State in Trajectory: $(round.(s; digits=2))")
