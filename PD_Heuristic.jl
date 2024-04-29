@@ -1,5 +1,74 @@
 using ProgressMeter
 
+# Using the new action space of just thrusts
+function heuristic_policy(s)
+    # Unpack the state
+    x, y, x_dot, y_dot, theta, theta_dot, t = s
+
+    # Hyperparameters
+    k1_thrust = 150.0
+    k2_thrust = 3150.0
+
+    if t < 80 #seconds
+        y_ref = env.bounds[4]/1.1
+    else
+        y_ref = 0
+    end
+
+    # If the rocket is not above the landing pad, move to the left or right
+    thrust = clamp(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0.0, 2 * env.g * env.m)
+
+    return thrust
+end
+
+# Takes the continuous action and returns the discrete action
+function discrete_policy_distance_metric(s)
+    thrust_cont = heuristic_policy(s)
+
+    # Compare using the Euclidean distance to the possible actions
+    A = actions(env)
+    min_dist = Inf
+    min_ind = 1
+    for i in 1:length(A)
+        D = abs(A[i][1] - thrust_cont)
+        if D < min_dist
+            min_dist = D
+            min_ind = i
+        end
+    end
+
+    #@printf("Continuous Action: [%0.1f, %0.1f] \t Discrete Action: [%0.1f, %0.1f]\n", cont_vec[1], cont_vec[2], A[min_ind][1]/env.thrust, A[min_ind][2]/env.torque)
+    
+    return min_ind
+
+end
+
+# function discrete_policy_distance_metric(s)
+#     thrust_cont, torque_cont = heuristic_policy(s)
+
+#     # Normalize the continuous thrust and torque into a vector
+#     thrust_cont = thrust_cont / env.thrust
+#     torque_cont = torque_cont / env.torque
+#     cont_vec = [thrust_cont, torque_cont]
+
+#     # Compare using the Euclidean distance to the possible actions
+#     A = actions(env)
+#     min_dist = Inf
+#     min_ind = 1
+#     for i in 1:length(A)
+#         D = sqrt((A[i][1]/env.thrust - cont_vec[1])^2 + (A[i][2]/env.torque - cont_vec[2])^2)
+#         if D < min_dist
+#             min_dist = D
+#             min_ind = i
+#         end
+#     end
+
+#     #@printf("Continuous Action: [%0.1f, %0.1f] \t Discrete Action: [%0.1f, %0.1f]\n", cont_vec[1], cont_vec[2], A[min_ind][1]/env.thrust, A[min_ind][2]/env.torque)
+    
+#     return min_ind
+
+# end
+
 function root_locus_plot(A::Function, k, range, title_name)
     # Create a plot of the root locus of the system
     # Inputs
@@ -106,58 +175,58 @@ function calculate_gains(env)
 
 end
 
-function heuristic_policy(s)
+# function heuristic_policy(s)
 
-    # Hyperparameters
-    ζ_rot = 1.2
-    ω_n_rot = 0.1 # Natural frequency Hz
-    λ_1 = -1/2
-    λ_2 = -1/0.2
-    k1_rot = (λ_1 * λ_2)*env.I
-    k2_rot = -(λ_1 + λ_2)*env.I
-    k3_rot = -2 * 10^5
-    k4_rot = 0.02
+#     # Hyperparameters
+#     ζ_rot = 1.2
+#     ω_n_rot = 0.1 # Natural frequency Hz
+#     λ_1 = -1/2
+#     λ_2 = -1/0.2
+#     k1_rot = (λ_1 * λ_2)*env.I
+#     k2_rot = -(λ_1 + λ_2)*env.I
+#     k3_rot = -2 * 10^5
+#     k4_rot = 0.02
 
-    A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot*k3_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
+#     A = [0 1 0 0; 0 0 -9.81 0; 0 0 0 1; -(k4_rot*k3_rot)/env.I -k3_rot/env.I -k1_rot/env.I -k2_rot/env.I]
 
-    λ_1th = -1/20
-    λ_2th = -1/1
-    k1_thrust = (λ_1th * λ_2th)*env.m
-    k2_thrust = -(λ_1th + λ_2th)*env.m
+#     λ_1th = -1/20
+#     λ_2th = -1/1
+#     k1_thrust = (λ_1th * λ_2th)*env.m
+#     k2_thrust = -(λ_1th + λ_2th)*env.m
 
-    # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot, t = s
+#     # Unpack the state
+#     x, y, x_dot, y_dot, theta, theta_dot, t = s
 
-    if t < 80 #seconds
-        y_ref = env.bounds[4]/1.1
-    else
-        y_ref = 0
-    end
+#     if t < 80 #seconds
+#         y_ref = env.bounds[4]/1.1
+#     else
+#         y_ref = 0
+#     end
 
-    # If the rocket is not above the landing pad, move to the left or right
-    torque = clamp(-k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x, -env.torque, env.torque)
-    thrust = clamp(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0.0, env.thrust)
+#     # If the rocket is not above the landing pad, move to the left or right
+#     torque = clamp(-k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x, -env.torque, env.torque)
+#     thrust = clamp(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0.0, env.thrust)
 
-    return [thrust, torque]
-    # return [0.0,0.0]
+#     return [thrust, torque]
+#     # return [0.0,0.0]
 
-end
+# end
 
-function heuristic_policy(s, k)
-    # Unpack the state
-    x, y, x_dot, y_dot, theta, theta_dot, t = s
+# function heuristic_policy(s, k)
+#     # Unpack the state
+#     x, y, x_dot, y_dot, theta, theta_dot, t = s
 
-    # Unpack the gains
-    k1_rot, k2_rot, k3_rot, k4_rot, k1_thrust, k2_thrust = k
+#     # Unpack the gains
+#     k1_rot, k2_rot, k3_rot, k4_rot, k1_thrust, k2_thrust = k
 
-    # Set the reference height
-    y_ref = 0.0
+#     # Set the reference height
+#     y_ref = 0.0
 
-    torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
-    thrust = max(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0)
+#     torque = -k1_rot*theta - k2_rot*theta_dot - k3_rot*x_dot - k4_rot*k3_rot*x
+#     thrust = max(-k1_thrust*(y - y_ref) - k2_thrust*y_dot, 0)
 
-    return [thrust, torque]
-end
+#     return [thrust, torque]
+# end
 
 function PD_Solve(env)
     # Solve the environment using a PD controller

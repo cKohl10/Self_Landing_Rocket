@@ -86,6 +86,7 @@ function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, thrust::Float64, torq
     return R
 end
 
+
 ################ COMMON RL INTERFACE FUNCTIONS ################
 
 # Function to initialize the environment and reset after landing
