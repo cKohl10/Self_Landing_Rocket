@@ -178,11 +178,11 @@ function DQN_Solve_Metric(env)
     bufferSize = 100000
     batch = 2000
     ϵ_max = 0.6
-    ϵ_min = 0.1
+    ϵ_min = 0.05
     n = 2000 # Number of steps in an episode
-    epochs = 200
+    epochs = 5000
     num_eps = 50   # For evaluate function
-    max_steps = 300 # Maximum number of steps in an eval episode
+    max_steps = 2000 # Maximum number of steps in an eval episode
     set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
 
     function continuous_policy(s)
@@ -260,7 +260,7 @@ function DQN_Solve_Metric(env)
         opt = Flux.setup(ADAM(0.0005), Q)
 
         # Gain experience
-        ϵ = ϵ_min + (ϵ_max - ϵ_min)*(epochs - epoch)/epochs
+        ϵ = ϵ_min + (ϵ_max - ϵ_min) * ((epochs - epoch)/epochs)
         buffer = experience(buffer, n, ϵ)
 
         # Copy Q network and define the loss function

@@ -16,10 +16,10 @@ include("DQN.jl")
 include("PD_Heuristic.jl")
 
 # Environment parameters
-x_min = -500.0 # m
-x_max = 500.0 # m
+x_min = -100.0 # m
+x_max = 100.0 # m
 y_max = 5000.0 # m
-dt = 0.2 # s
+dt = 0.1 # s
 g = 9.81 # m/s^2
 
 # Rocket parameters
@@ -47,6 +47,12 @@ display(total_plots)
 
 # # Test the discrete translation of the PD controller
 total_plots, state_plots = render(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD to Discrete Controller")
+display(state_plots)
+display(total_plots)
+
+# Save the output of a single PD to Discrete Controller
+print("Saving PD to Discrete Controller Output in CSV...\n")
+total_plots, state_plots = render_and_save(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD2Disc")
 display(state_plots)
 display(total_plots)
 

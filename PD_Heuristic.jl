@@ -8,9 +8,10 @@ function heuristic_policy(s)
     # Hyperparameters
     k1_thrust = 150.0
     k2_thrust = 3150.0
+    descent_time = 80.0
 
     if t < 80 #seconds
-        y_ref = env.bounds[4]/1.1
+        y_ref = (env.bounds[4] * (1 - t/descent_time))
     else
         y_ref = 0
     end

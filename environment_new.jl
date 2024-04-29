@@ -1,6 +1,8 @@
 # This script is where the environment for the problem will be defined
 
 import CommonRLInterface
+using DataFrames
+using CSV
 
 # Environment to work with CommonRLInterface
 mutable struct RocketEnv2D
@@ -270,7 +272,7 @@ function CommonRLInterface.act!(env::RocketEnv2D, action::Float64)
     return reward!(env)
 end
 
-function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::String, n::Int=10, max_steps::Int=10000)
+function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::String, n::Int=10, max_steps::Int=10000, save::Bool=false)
 
     println("Rendering the environment")
 
@@ -313,7 +315,11 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
 
     for i in 1:n
         # Simulate the trajectory
-        state, total_reward, actions = simulate_trajectory!(env, policy, max_steps)
+        if save
+            state, total_reward, actions = simulate_trajectory_and_save!(env, policy, max_steps, title * "_$(i)")
+        else
+            state, total_reward, actions = simulate_trajectory!(env, policy, max_steps)
+        end
         all_actions = [] # Back out the vectoring angles and torque
         for i in 1:length(actions)
             push!(all_actions, torque_controls(env, state[i], actions[i]))
@@ -344,6 +350,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
     return s, p
 end
 
+render_and_save(env::RocketEnv2D, policy::Function, title::String, n::Int=1, max_steps::Int=10000) = CommonRLInterface.render(env, policy, title, n, max_steps, true)
 ################################################################
 
 ################# Simulation Functions #########################
@@ -391,6 +398,65 @@ function simulate_trajectory!(env::RocketEnv2D, policy::Function, max_steps::Int
 
     #println("Total Reward: ", total_reward)
     #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+
+    return states, total_reward, actions
+end
+
+# Saves the output of the simulation as a CSV file
+function simulate_trajectory_and_save!(env::RocketEnv2D, policy::Function, max_steps::Int, filename::String, fps::Float64=10.0)
+    # Initialize the total reward
+    total_reward = 0.0
+
+    # Get the discount factor
+    γ = env.γ
+
+    # Reset the environment
+    CommonRLInterface.reset!(env)
+    s = CommonRLInterface.observe(env)
+
+    #println("Initial State in Trajectory: $(round.(s; digits=2))")
+
+    # Append s to a list of all states over the entire simulation
+    states = [s]
+    actions = []
+    data = []
+
+    # Loop through the simulation
+    for i in 1:max_steps
+        # Get the action from the policy
+        s = CommonRLInterface.observe(env)
+        a = policy(s)
+        push!(actions, a)
+
+        # Step in the environment
+        CommonRLInterface.act!(env, a)
+
+        # Append the state to the list of states
+        push!(states, CommonRLInterface.observe(env))
+
+        # Save the state and action to a DataFrame
+        # In the form [x, y, x_dot, y_dot, theta, theta_dot, time, action]
+        x, y, x_dot, y_dot, theta, theta_dot, t = s
+        push!(data, (frame=round(Int, i*(fps*env.dt)),time=t, x=x, y=0.0, z=y, phi=0.0, theta=theta, psi=0.0, action=a))
+
+        # Get the reward
+        r = reward!(env)
+
+        # Add the reward to the total
+        total_reward += γ^i * r
+
+        # Check if the environment is terminated
+        if CommonRLInterface.terminated(env)
+            break
+        end
+    end 
+
+    #println("Total Reward: ", total_reward)
+    #print("Final State in Trajectory: ", round.(env.state; digits=2), "\n \n")
+
+    # Save the states and actions to a CSV file
+    filename = "simulations/" * filename * "_2D.csv"
+    CSV.write(filename, DataFrame(data), writeheader=true)
 
     return states, total_reward, actions
 end
