@@ -170,17 +170,18 @@ function DQN_Solve_Metric(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(observe(env)), 128, relu),
-            Dense(128, length(actions(env))))
+    Q = Chain(Dense(length(observe(env)), 64, relu),
+            Dense(64, 64, relu),
+            Dense(64, length(actions(env))))
     Q_target = deepcopy(Q)
 
     # HYPERPARAMETERS
     bufferSize = 100000
-    batch = 2000
-    ϵ_max = 0.6
+    batch = 500
+    ϵ_max = 0.9
     ϵ_min = 0.05
     n = 2000 # Number of steps in an episode
-    epochs = 5000
+    epochs = 200
     num_eps = 50   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
     set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
