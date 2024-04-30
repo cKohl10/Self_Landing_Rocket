@@ -173,6 +173,7 @@ function DQN_Solve_Metric(env)
     Q = Chain(Dense(length(observe(env)), 128, relu),
             Dense(128, length(actions(env))))
     Q_target = deepcopy(Q)
+    Q_best = deepcopy(Q)
 
     # HYPERPARAMETERS
     bufferSize = 100000
@@ -293,6 +294,7 @@ function DQN_Solve_Metric(env)
         # Save the reward if it is the best reward
         if avgReward > best_reward
             best_reward = avgReward
+            Q_best = deepcopy(Q)
         end
 
         # Shift the buffer if exceeding buffer size
@@ -317,9 +319,9 @@ function DQN_Solve_Metric(env)
     end
 
     # Save the model as previous trained model
-    save_model(Q, string("models/Q_discrete_metric_" * @sprintf("%0.1f",best_reward) * "_best_reward"))
+    save_model(Q_best, string("models/Q_discrete_metric_" * @sprintf("%0.1f",best_reward) * "_best_reward"))
 
-    return Q
+    return Q_best
 end
 
 function save_model(Q, filename)

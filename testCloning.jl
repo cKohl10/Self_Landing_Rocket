@@ -10,32 +10,31 @@ using Images # For rendering the rocket
 using POMDPTools: FunctionPolicy
 
 # Importing the environment
-include("environment.jl")
+include("environment_new.jl")
 include("helperFuncs.jl")
 include("DQN.jl")
 include("PD_Heuristic.jl")
-include("Behavior_Cloning.jl")
 
 # Environment parameters
 x_min = -500.0 # m
 x_max = 500.0 # m
-y_max = 5000.0 # m
+y_max = 1000.0 # m
 dt = 0.1 # s
+g = 9.81 # m/s^2
 
 # Rocket parameters
-thrust = 30.0 * 10^3 #N
-torque = 100.0 * 10^3 #Nm
 m = 3000.0 #kg
 h = 50.0 # m height of rocket
 I = (1.0/12.0)*m*(h^2) #kg*m^2 using simple rod model
+ϕ_max = pi/8.0 # rad
 
 # Create a 2D rocket environment
-env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, thrust, torque, m, I)
+env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, g, ϕ_max, m, I, h)
 print_env(env)
 
 # Calculate the gains for the PD controller heuristic
 print("Calculating Gains...\n")
-#calculate_gains(env)
+calculate_gains(env)
 
 # Test the render function
 # total_plots, state_plots = render(env)
