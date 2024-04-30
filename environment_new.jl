@@ -329,6 +329,7 @@ function CommonRLInterface.render(env::RocketEnv2D, policy::Function, title::Str
             push!(all_actions, torque_controls(env, state[i], actions[i]))
         end
 
+        #println("Total Reward: ", total_reward)
 
         x_traj = [s[1] for s in state]
         y_traj = [s[2] for s in state]
@@ -530,6 +531,7 @@ function simulate!(env::RocketEnv2D, policy::Function, max_steps::Int)
     # Loop through the simulation
     for i in 1:max_steps
         # Get the action from the policy
+        s = CommonRLInterface.observe(env)
         a = policy(s)
 
         # Step in the environment

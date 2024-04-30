@@ -173,17 +173,27 @@ function DQN_Solve_Metric(env)
     Q = Chain(Dense(length(observe(env)), 64, relu),
             Dense(64, 64, relu),
             Dense(64, length(actions(env))))
+
+    load = false
+    if load
+        name = "models/Q_discrete_metric_best_reward.bson"
+        Q = BSON.load(name)[:Q]
+        print("Model loaded from: ", name, "\n")
+    end
+
     Q_target = deepcopy(Q)
     Q_best = deepcopy(Q)
+    #Q_best_local = deepcopy(Q)
 
     # HYPERPARAMETERS
     bufferSize = 100000
     batch = 1000
-    ϵ_max = 0.9
+    ϵ_max = 0.6
     ϵ_min = 0.05
+    exploration_epochs = 1000
     n = 1000 # Number of steps in an episode
     epochs = 1000
-    num_eps = 50   # For evaluate function
+    num_eps = 100   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
     set_Q_targ = 2 # Set the target Q network every set_Q_targ epochs
 
@@ -262,8 +272,15 @@ function DQN_Solve_Metric(env)
         opt = Flux.setup(ADAM(0.0005), Q)
 
         # Gain experience
-        ϵ = ϵ_min + (ϵ_max - ϵ_min) * ((epochs - epoch)/epochs)
-        buffer = experience(buffer, n, ϵ)
+        function ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch) 
+            if epoch <= exploration_epochs
+                return ϵ_min + (ϵ_max - ϵ_min) * ((epochs - epoch)/exploration_epochs)
+            else
+                return ϵ_min
+            end
+        end
+
+        buffer = experience(buffer, n, ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch))
 
         # Copy Q network and define the loss function
         if epoch % set_Q_targ == 0
@@ -310,16 +327,22 @@ function DQN_Solve_Metric(env)
         if epoch % 10 == 0
             # Simulate the environment with a few trajectories
             title_name = "Epoch: " * string(epoch)
-            s,p = render(env, s->actions(env)[argmax(Q_best(s))], title_name, 20)
+            s,p = render(env, s->actions(env)[argmax(Q(s))], title_name, 20)
             display(p) # State space plot
             display(s) # Display the inertial path plot
 
             # Plot the learning curve
             display(data_plot(rewards_history, "Average Reward"))
+
+            # Update the local best model
+            #Q_best_local = deepcopy(Q)
         end
     end
 
     # Save the model as previous trained model
+    print("Evaluating the best model...\n")
+    best_reward = eval(Q_best, 10000)
+    print("Saved model with best reward of: ", best_reward, "\n")
     save_model(Q_best, string("models/Q_discrete_metric_" * @sprintf("%0.1f",best_reward) * "_best_reward"))
 
     return Q_best

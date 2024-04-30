@@ -84,10 +84,10 @@ end
 
 
 # Evaluate function, calculates the average reward using the simulate function for a given number of episodes
-function eval(policy, num_eps)
-    totReward = 0
+function eval(env::RocketEnv2D, policy::Function, num_eps)
+    totReward = 0.0
     for _ in 1:num_eps
-        totReward += simulate!(env, policy, n)
+        totReward += simulate!(env, policy::Function, 100000)
     end
     # Return the average reward per episode
     return totReward / num_eps
