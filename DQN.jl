@@ -178,14 +178,14 @@ function DQN_Solve_Metric(env)
 
     # HYPERPARAMETERS
     bufferSize = 100000
-    batch = 500
+    batch = 1000
     ϵ_max = 0.9
     ϵ_min = 0.05
-    n = 2000 # Number of steps in an episode
-    epochs = 200
+    n = 1000 # Number of steps in an episode
+    epochs = 1000
     num_eps = 50   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
-    set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
+    set_Q_targ = 2 # Set the target Q network every set_Q_targ epochs
 
     function continuous_policy(s)
         thrust_cont, torque_cont = heuristic_policy(s)
@@ -194,10 +194,10 @@ function DQN_Solve_Metric(env)
 
     
     # Epsilon Greedy Policy
-    function policy(s, epsilon=0.1)
+    function policy(s, epsilon=0.1, δ=0.7)
         if rand() < epsilon
 
-            if rand() < 0.5
+            if rand() < δ
                 return discrete_policy_distance_metric(s)
             else
                 return rand(1:length(actions(env)))
@@ -310,7 +310,7 @@ function DQN_Solve_Metric(env)
         if epoch % 10 == 0
             # Simulate the environment with a few trajectories
             title_name = "Epoch: " * string(epoch)
-            s,p = render(env, s->actions(env)[argmax(Q(s))], title_name, 20)
+            s,p = render(env, s->actions(env)[argmax(Q_best(s))], title_name, 20)
             display(p) # State space plot
             display(s) # Display the inertial path plot
 

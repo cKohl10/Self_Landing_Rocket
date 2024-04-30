@@ -42,6 +42,7 @@ print_env(env)
 # display(total_plots)
 
 # # Test the continuous translation of the heuristic policy
+eval(env, heuristic_policy, 1000)
 total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 5)
 display(state_plots)
 display(total_plots)
@@ -59,7 +60,7 @@ display(total_plots)
 
 # Train a DQN model
 # Q = DQN_Solve(env)
-# Q = DQN_Solve_Metric(env)
+#Q = DQN_Solve_Metric(env)
 
 # Define basic policy
 # policy = state -> begin

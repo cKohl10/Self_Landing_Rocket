@@ -3,7 +3,7 @@ using Statistics
 
 function reward_to_color(reward)
 
-    max_reward = 200
+    max_reward = 3000
     min_reward = -200
 
     # Normalize the reward to a value between 0 and 1

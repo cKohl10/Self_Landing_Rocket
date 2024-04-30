@@ -109,7 +109,7 @@ function reward!(env::RocketEnv2D)
         end
 
         env.landed = true
-        reward = reward * 2000
+        reward = reward * 200
         return reward
     end
     # Return a negative reward for going out of bounds
@@ -122,7 +122,7 @@ function reward!(env::RocketEnv2D)
     target_direction = [(x_target - x),(y_target-y)]/norm([(x_target - x),(y_target-y)])
     velocity_direction = [x_dot, y_dot]/norm([x_dot, y_dot])
     dot_product = dot(target_direction, velocity_direction)
-    reward += 5*dot_product
+    reward = 0.5*dot_product
     
 
     return reward
