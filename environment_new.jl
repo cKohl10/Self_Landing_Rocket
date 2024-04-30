@@ -83,7 +83,7 @@ function reward!(env::RocketEnv2D)
     # Unpack the state
     x, y, x_dot, y_dot, theta, theta_dot = env.state
     x_target = env.target
-
+    y_target = 0.0
     #### Hyperparameters ####
     crash_vel = 20.0 #m/s
     crash_theta = 10 * (pi/180) #radians
@@ -118,8 +118,12 @@ function reward!(env::RocketEnv2D)
         return -200
     end
 
-    # A step in the environment is a small negative reward
-    reward = -1*env.dt
+    # If the rocket moves towards the target, give a small reward
+    target_direction = [(x_target - x),(y_target-y)]/norm([(x_target - x),(y_target-y)])
+    velocity_direction = [x_dot, y_dot]/norm([x_dot, y_dot])
+    dot_product = dot(target_direction, velocity_direction)
+    reward += 5*dot_product
+    
 
     return reward
 end
