@@ -162,7 +162,7 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      ### Hyperparameters ###
      max_angle = pi/4.0 # Maximum angle of the rocket spawn
      max_x_dot = 5.0 # Maximum x velocity of the rocket spawn
-     max_y_dot = 200.0 # Maximum y velocity of the rocket spawn
+     max_y_dot = 20.0 # Maximum y velocity of the rocket spawn
 
      env.landed = false
      

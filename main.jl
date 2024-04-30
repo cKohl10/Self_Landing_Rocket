@@ -18,7 +18,7 @@ include("PD_Heuristic.jl")
 # Environment parameters
 x_min = -500.0 # m
 x_max = 500.0 # m
-y_max = 5000.0 # m
+y_max = 1000.0 # m
 dt = 0.1 # s
 g = 9.81 # m/s^2
 
@@ -26,7 +26,7 @@ g = 9.81 # m/s^2
 m = 3000.0 #kg
 h = 50.0 # m height of rocket
 I = (1.0/12.0)*m*(h^2) #kg*m^2 using simple rod model
-ϕ_max = pi/4.0 # rad
+ϕ_max = pi/8.0 # rad
 
 # Create a 2D rocket environment
 env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, g, ϕ_max, m, I, h)
