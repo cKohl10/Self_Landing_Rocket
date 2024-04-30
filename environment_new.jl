@@ -162,7 +162,7 @@ function CommonRLInterface.reset!(env::RocketEnv2D)
      ### Hyperparameters ###
      max_angle = pi/4.0 # Maximum angle of the rocket spawn
      max_x_dot = 5.0 # Maximum x velocity of the rocket spawn
-     max_y_dot = 20.0 # Maximum y velocity of the rocket spawn
+     max_y_dot = 200.0 # Maximum y velocity of the rocket spawn
 
      env.landed = false
      
@@ -437,7 +437,9 @@ function simulate_trajectory_and_save!(env::RocketEnv2D, policy::Function, max_s
         # Save the state and action to a DataFrame
         # In the form [x, y, x_dot, y_dot, theta, theta_dot, time, action]
         x, y, x_dot, y_dot, theta, theta_dot, t = s
-        push!(data, (frame=round(Int, i*(fps*env.dt)),time=t, x=x, y=0.0, z=y, phi=0.0, theta=theta, psi=0.0, action=a))
+        thrust, ϕ, torque = torque_controls(env, s, a)
+        thrust_ratio = thrust / (2*env.g*env.m)
+        push!(data, (frame=round(Int, i*(fps*env.dt)),time=t, x=x, y=0.0, z=y, phi=0.0, theta=theta, psi=0.0, thrust_ratio=thrust_ratio, thrust=thrust, vectoring_angle=ϕ, torque=torque))
 
         # Get the reward
         r = reward!(env)

@@ -16,8 +16,8 @@ include("DQN.jl")
 include("PD_Heuristic.jl")
 
 # Environment parameters
-x_min = -100.0 # m
-x_max = 100.0 # m
+x_min = -500.0 # m
+x_max = 500.0 # m
 y_max = 5000.0 # m
 dt = 0.1 # s
 g = 9.81 # m/s^2
@@ -58,7 +58,7 @@ display(total_plots)
 
 # Train a DQN model
 # Q = DQN_Solve(env)
-Q = DQN_Solve_Metric(env)
+#Q = DQN_Solve_Metric(env)
 
 # Define basic policy
 # policy = state -> begin
