@@ -132,12 +132,14 @@ function CloneExpert(env, heuristic)
 
     # Deep action network to approximate thrust and torque
     net = Chain(Dense(length(observe(env)), 128, relu),
-            Dense(128, 2))
+            Dense(128, 1))
+    bestNet = deepcopy(net)
 
     # HYPERPARAMETERS
     maxSteps = 10000        # Max steps in the environment for episode calls
     numEps = 1000           # Episodes for initial data set
     daggerEPs = 10          # Addition simulations to augment data set
+    best_reward = -Inf
 
     # Define loss function and optimizer
     loss(model, x, y) = Flux.mse(model(x), y);
@@ -176,16 +178,16 @@ function CloneExpert(env, heuristic)
 
             # Create policy from the network
             function netPolicy(s)
-                return convert(Vector{Float64}, net(s))
+                return convert(Float64, net(s))
             end
 
             # Act in the environment and collect data
             s = observe(env)
-            thrustNet, torqueNet = netPolicy(s)
-            thrust, torque = heuristic(s)           # Expert data
-            r = act!(env, [thrustNet, torqueNet])   # Act with neural network
-            push!(inputData, s)                     # State Data
-            push!(outputData, [thrust, torque])     # Output thrust and torque from the heuristic to train
+            thrustNet = netPolicy(s)
+            thrust = heuristic(s)           # Expert data
+            r = act!(env, thrustNet)        # Act with neural network
+            push!(inputData, s)             # State Data
+            push!(outputData, thrust)       # Output thrust and torque from the heuristic to train
         end
 
         # Train with new expert data
@@ -194,15 +196,21 @@ function CloneExpert(env, heuristic)
 
         # Create policy
         function netPolicy(s)
-            return convert(Vector{Float64}, net(s))
+            thrust = net(s)
+            return convert(Float64, thrust[1])
         end
 
         # Calculate the reward
         DAggerReward = mean([simulate!(env, netPolicy, maxSteps) for _ in 1:100])
 
+        if DAggerReward > best_reward
+            best_reward = DAggerReward
+            bestNet = deepcopy(net)
+        end
+
         print("DAgger Epoch: ", i, " Average Reward: ", DAggerReward, "\n")
     end
-    return net
+    return bestNet
 end
 
 
