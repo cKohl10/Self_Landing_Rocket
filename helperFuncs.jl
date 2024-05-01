@@ -166,7 +166,11 @@ function supervised_learning(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(
         if epoch % 1 == 0
             # Get a validation set of data to compare to the training data
             x, y = first(train_loader)
-            println("Epoch: ", epoch, " Loss: ", loss_fn(model, x, y))
+            loss_val = 0.0
+            for i in 1:length(x)
+                loss_val += loss_fn(model, x[i], y[i])
+            end
+            println("Epoch: ", epoch, " Loss: ", loss_val/length(x))
         end
     end
 end

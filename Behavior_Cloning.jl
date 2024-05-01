@@ -143,7 +143,7 @@ function CloneExpert(env, heuristic)
 
     # HYPERPARAMETERS
     maxSteps = 2000        # Max steps in the environment for episode calls
-    numEps = 10           # Episodes for initial data set
+    numEps = 100           # Episodes for initial data set
     daggerEPs = 10          # Addition simulations to augment data set
     best_reward = -Inf
 
@@ -174,10 +174,10 @@ function CloneExpert(env, heuristic)
         append!(outputData, outEp)
     end
 
-    print("Data size: ", length(inputData), "\n")
-
     # Train with expert data set
-    print("Cloning Behavior...\n")
+    print("\nCloning Behavior...\n")
+    println("Data size: ", length(inputData), " Epochs: ", epochs_sp, " Batch Size: ", batchSize_sp, "\nTraining Calls per Epoch: ", floor(length(inputData)/batchSize_sp))
+    println("Total Training Calls: ", epochs_sp*floor(length(inputData)/batchSize_sp))
     if CUDA.functional() && use_gpu
         # data = [(gpu(inputData[i]), gpu(outputData[i])) for i in 1:length(inputData)]
         # Flux.train!(loss, net, data, opt)
@@ -185,6 +185,9 @@ function CloneExpert(env, heuristic)
     else
         supervised_learning(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
     end
+    s,p = render(env, s->actions(env)[argmax(net(s))], "Supervised Learning Model", 20)
+    display(p) # State space plot
+    display(s) # Display the inertial path plot
     print("Cloned Behavior, executing DAgger...\n")
 
     # DAgger to improve the neural net
