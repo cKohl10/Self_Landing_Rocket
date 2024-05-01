@@ -190,12 +190,12 @@ function DQN_Solve_Metric(env)
     batch = 1000
     ϵ_max = 0.6
     ϵ_min = 0.05
-    exploration_epochs = 1000
+    exploration_epochs = 10000
     n = 1000 # Number of steps in an episode
-    epochs = 1000
+    epochs = 15000
     num_eps = 100   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
-    set_Q_targ = 2 # Set the target Q network every set_Q_targ epochs
+    set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
 
     function continuous_policy(s)
         thrust_cont, torque_cont = heuristic_policy(s)

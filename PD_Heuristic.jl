@@ -8,7 +8,7 @@ function heuristic_policy(s)
     # Hyperparameters
     k1_thrust = 150.0
     k2_thrust = 3150.0
-    descent_time = 40.0
+    descent_time = 120.0
     level_descent_time = 40.0
     level_descent_height = 0.1*env.bounds[4]
 

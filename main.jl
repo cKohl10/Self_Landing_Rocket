@@ -17,9 +17,9 @@ include("DQN.jl")
 include("PD_Heuristic.jl")
 
 # Environment parameters
-x_min = -500.0 # m
-x_max = 500.0 # m
-y_max = 1000.0 # m
+x_min = -100.0 # m
+x_max = 100.0 # m
+y_max = 2000.0 # m
 dt = 0.1 # s
 g = 9.81 # m/s^2
 
@@ -42,7 +42,7 @@ print_env(env)
 # display(total_plots)
 
 # # Test the continuous translation of the heuristic policy
-println("Heuristic PD Controller Avg Reward: ", eval(env, heuristic_policy, 10000))
+# println("Heuristic PD Controller Avg Reward: ", eval(env, heuristic_policy, 10000))
 total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 5)
 display(state_plots)
 display(total_plots)
