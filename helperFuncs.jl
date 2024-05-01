@@ -167,11 +167,8 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
         data = vec(collect(zip(data[1], data[2])))
         Flux.train!(loss_fn, model, data, opt)
 
-        # Update the progress bar
-        next!(p)
-
         # Print the loss every 10 epochs
-        if epoch % 1 == 0
+        if epoch % 5 == 0
             # Get a validation set of data to compare to the training data
             x, y = first(train_loader)
             loss_val = 0.0
@@ -179,6 +176,9 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
                 loss_val += loss_fn(model, x[i], y[i])
             end
             loss_val = round(loss_val/length(x), digits=1)
+            
+            # Update the progress bar
+            next!(p)
             println("\nEpoch: ", epoch, " Loss: ", loss_val)
 
             push!(losses, loss_val)

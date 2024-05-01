@@ -182,11 +182,10 @@ function CloneExpert(env, heuristic)
         # data = [(gpu(inputData[i]), gpu(outputData[i])) for i in 1:length(inputData)]
         # Flux.train!(loss, net, data, opt)
         losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, true)
-        net = cpu(net)
     else
         losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
     end
-    s,p = render(env, s->actions(env)[argmax(net(s))], "Supervised Learning Model", 20)
+    s,p = render(env, s->actions(env)[argmax(cpu(net(s)))], "Supervised Learning Model", 20)
     display(p) # State space plot
     display(s) # Display the inertial path plot
 
