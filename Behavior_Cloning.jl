@@ -1,4 +1,5 @@
 using Flux
+using CUDA
 
 # DQN Function
 function DQN_Solve_Continuous(env)
@@ -141,15 +142,28 @@ function CloneExpert(env, heuristic)
     bestNet = deepcopy(net)
 
     # HYPERPARAMETERS
-    maxSteps = 10000        # Max steps in the environment for episode calls
-    numEps = 1000           # Episodes for initial data set
+    maxSteps = 2000        # Max steps in the environment for episode calls
+    numEps = 10           # Episodes for initial data set
     daggerEPs = 10          # Addition simulations to augment data set
     best_reward = -Inf
+
+    # Supervised learning Hyperparameters
+    epochs_sp = 10
+    batchSize_sp = 2048
+    use_gpu = true
+
+    # Check if CUDA is available
+    if CUDA.functional() && use_gpu
+        println("Using CUDA for training...")
+        net = gpu(net)
+    else
+        println("CUDA not available, training on CPU...")
+    end
 
     # Define loss function and optimizer
     loss(model, x, y) = Flux.mse(model(x), y);
     #opt = Flux.ADAM(0.01)
-    opt = Flux.setup(Adam(0.01), net)
+    opt = Flux.setup(Adam(0.001), net)
     
     # Gather large initial data set for behavior cloning
     inputData = []
@@ -160,10 +174,17 @@ function CloneExpert(env, heuristic)
         append!(outputData, outEp)
     end
 
+    print("Data size: ", length(inputData), "\n")
+
     # Train with expert data set
     print("Cloning Behavior...\n")
-    data = [(inputData[i], outputData[i]) for i in 1:length(inputData)]
-    Flux.train!(loss, net, data, opt)
+    if CUDA.functional() && use_gpu
+        # data = [(gpu(inputData[i]), gpu(outputData[i])) for i in 1:length(inputData)]
+        # Flux.train!(loss, net, data, opt)
+        supervised_learning(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, true)
+    else
+        supervised_learning(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
+    end
     print("Cloned Behavior, executing DAgger...\n")
 
     # DAgger to improve the neural net

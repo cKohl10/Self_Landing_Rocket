@@ -1,5 +1,6 @@
 using ColorSchemes
 using Statistics
+using ProgressMeter
 
 function reward_to_color(reward)
 
@@ -131,4 +132,41 @@ function torque_controls(env::RocketEnv2D, state, action)
 
     return [thrust, ϕ, torque]
 
+end
+
+function supervised_learning(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(0.001), using_GPU=false)
+    # X = input data [nxm], Y = target data [nx1]
+    # Train the model using supervised learning
+    if using_GPU
+        #println("Loading data onto GPU...")
+        # Shuffle the data
+        train_loader = Flux.DataLoader((X, Y), batchsize=batch_size, shuffle=true, partial=true) |> gpu
+    else
+        println("Loading data onto CPU...")
+        # Shuffle the data
+        train_loader = Flux.DataLoader((X, Y), batchsize=batch_size, shuffle=true, partial=true)    
+    end
+
+    # Create a progress bar
+    p = Progress(epochs, 1)
+
+    for epoch in 1:epochs
+
+        # Take a subset of the data based on the batch size and train the model
+        for (x, y) in train_loader
+            data = [(x[i], y[i]) for i in 1:length(x)]
+            Flux.train!(loss_fn, model, data, opt)
+            #println("Epoch: ", epoch, " Loss: ", loss_fn(model, x, y))
+        end
+
+        # Update the progress bar
+        next!(p)
+
+        # Print the loss every 10 epochs
+        if epoch % 1 == 0
+            # Get a validation set of data to compare to the training data
+            x, y = first(train_loader)
+            println("Epoch: ", epoch, " Loss: ", loss_fn(model, x, y))
+        end
+    end
 end
