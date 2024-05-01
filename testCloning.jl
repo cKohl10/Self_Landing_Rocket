@@ -14,6 +14,7 @@ include("environment_new.jl")
 include("helperFuncs.jl")
 include("DQN.jl")
 include("PD_Heuristic.jl")
+include("Behavior_Cloning.jl")
 
 # Environment parameters
 x_min = -500.0 # m
@@ -32,9 +33,6 @@ I = (1.0/12.0)*m*(h^2) #kg*m^2 using simple rod model
 env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, g, ϕ_max, m, I, h)
 print_env(env)
 
-# Calculate the gains for the PD controller heuristic
-print("Calculating Gains...\n")
-calculate_gains(env)
 
 # Test the render function
 # total_plots, state_plots = render(env)
@@ -51,21 +49,21 @@ net = CloneExpert(env, heuristic_policy)
 
 # Define basic policy
 policy = state -> begin
-    return [0.0, 0.0]
+    return 0.0
 end
 
 # Policy based on the neural network
 function netPolicy(s)
-    return convert(Vector{Float64}, net(s))
+    thrust = net(s)
+    return convert(Float64, thrust[1])
 end
-
 
 # Evaluate policies
 max_steps = 10000
 numEps = 100
 nothingReward = mean([simulate!(env, policy, max_steps) for _ in 1:numEps])
 heuristicReward = mean([simulate!(env, heuristic_policy, max_steps) for _ in 1:numEps])
-DPDReward = mean([simulate!(env, policy, max_steps) for _ in 1:numEps])
+DPDReward = mean([simulate!(env, netPolicy, max_steps) for _ in 1:numEps])
 print("Nothing Average Reward: ", nothingReward, '\n')
 print("Heuristic Average Reward: ", heuristicReward, '\n')
 print("DAgger Total Reward: ", DPDReward, '\n')
