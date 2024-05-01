@@ -136,7 +136,7 @@ function CloneExpert(env, heuristic)
     #         Dense(128, 1))
     # bestNet = deepcopy(net)
 
-    net = Chain(Dense(length(observe(env)), 128, relu),
+    net = Chain(Dense(length(observe(env))-1, 128, relu),       # -1 for not including time in the state
             Dense(128, 128, relu),
             Dense(128, 1))
     bestNet = deepcopy(net)
