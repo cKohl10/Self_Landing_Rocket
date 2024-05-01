@@ -69,7 +69,7 @@ function rand_float(min::Float64, max::Float64)
 end
 
 # Useful for plotting the learning curves
-function data_plot(data, label)
+function data_plot(data, label, title=nothing)
     epochs = 1:length(data)
     n = ceil(Int, length(epochs)/100)
     if n <= 0
@@ -80,6 +80,9 @@ function data_plot(data, label)
     p = plot(x, y)
     xlabel!("Training Epochs")
     ylabel!(label)
+    if title != nothing
+        title!(title)
+    end
     display(p)
 end
 
@@ -134,7 +137,7 @@ function torque_controls(env::RocketEnv2D, state, action)
 
 end
 
-function supervised_learning(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(0.001), using_GPU=false)
+function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(0.001), using_GPU=false)
     # X = input data [nxm], Y = target data [nx1]
     # Train the model using supervised learning
     if using_GPU
@@ -149,15 +152,20 @@ function supervised_learning(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(
 
     # Create a progress bar
     p = Progress(epochs, 1)
+    losses = []
 
     for epoch in 1:epochs
 
         # Take a subset of the data based on the batch size and train the model
-        for (x, y) in train_loader
-            data = [(x[i], y[i]) for i in 1:length(x)]
-            Flux.train!(loss_fn, model, data, opt)
-            #println("Epoch: ", epoch, " Loss: ", loss_fn(model, x, y))
-        end
+        # for (x, y) in train_loader
+        #     data = [(x[i], y[i]) for i in 1:length(x)]
+        #     Flux.train!(loss_fn, model, data, opt)
+        #     #println("Epoch: ", epoch, " Loss: ", loss_fn(model, x, y))
+        # end
+
+        data, state = iterate(train_loader)
+        data = vec(collect(zip(data[1], data[2])))
+        Flux.train!(loss_fn, model, data, opt)
 
         # Update the progress bar
         next!(p)
@@ -170,7 +178,12 @@ function supervised_learning(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(
             for i in 1:length(x)
                 loss_val += loss_fn(model, x[i], y[i])
             end
-            println("Epoch: ", epoch, " Loss: ", loss_val/length(x))
+            loss_val = round(loss_val/length(x), digits=1)
+            println("\nEpoch: ", epoch, " Loss: ", loss_val)
+
+            push!(losses, loss_val)
         end
     end
+
+    return losses
 end
