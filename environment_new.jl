@@ -567,7 +567,7 @@ function episode!(env::RocketEnv2D, policy::Function, max_steps::Int)
         a = policy(s)
         r = act!(env, a)
         push!(inputData, s)                     # State Data
-        push!(outputData, a)     # Output thrust and torque
+        push!(outputData, a)                    # Output thrust
     end
     return inputData, outputData
 end

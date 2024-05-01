@@ -130,8 +130,13 @@ function CloneExpert(env, heuristic)
     print("Training DAgger Model...\n")
     reset!(env)
 
-    # Deep action network to approximate thrust and torque
+    # Deep action network to approximate thrust
+    # net = Chain(Dense(length(observe(env)), 128, relu),
+    #         Dense(128, 1))
+    # bestNet = deepcopy(net)
+
     net = Chain(Dense(length(observe(env)), 128, relu),
+            Dense(128, 128, relu),
             Dense(128, 1))
     bestNet = deepcopy(net)
 
@@ -176,9 +181,10 @@ function CloneExpert(env, heuristic)
                 break
             end
 
-            # Create policy from the network
+            # Create policy
             function netPolicy(s)
-                return convert(Float64, net(s))
+                thrust = net(s)
+                return convert(Float64, thrust[1])
             end
 
             # Act in the environment and collect data
@@ -210,8 +216,14 @@ function CloneExpert(env, heuristic)
 
         print("DAgger Epoch: ", i, " Average Reward: ", DAggerReward, "\n")
     end
+    print("Saved clone model with best reward of: ", best_reward, "\n")
+    save_model(bestNet, string("models/Clone_" * @sprintf("%0.1f",best_reward) * "_best_reward"))
     return bestNet
 end
 
+function save_model(Q, filename)
+    # Save the model to a file
+    BSON.@save filename Q
+end
 
 

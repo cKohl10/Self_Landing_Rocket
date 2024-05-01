@@ -17,9 +17,9 @@ include("PD_Heuristic.jl")
 include("Behavior_Cloning.jl")
 
 # Environment parameters
-x_min = -500.0 # m
-x_max = 500.0 # m
-y_max = 1000.0 # m
+x_min = -100.0 # m
+x_max = 100.0 # m
+y_max = 2000.0 # m
 dt = 0.1 # s
 g = 9.81 # m/s^2
 
@@ -34,21 +34,11 @@ env = RocketEnv2D([x_min, x_max, 0.0, y_max], dt, g, ϕ_max, m, I, h)
 print_env(env)
 
 
-# Test the render function
-# total_plots, state_plots = render(env)
-# display(state_plots)
-# display(total_plots)
-
-# Train a DQN model
-#Q = DQN_Solve(env)
-
-
 # Test NNet action approximator
-inputData, outputData = episode!(env, heuristic_policy, 10000)
 net = CloneExpert(env, heuristic_policy)
 
 # Define basic policy
-policy = state -> begin
+function policy(s)
     return 0.0
 end
 
@@ -72,6 +62,8 @@ print("DAgger Total Reward: ", DPDReward, '\n')
 # Plot results
 #render(env, policy, "Do Nothing")
 #render(env, netPolicy, "DPD Function Approximation")
-
+total_plots, state_plots = render(env, netPolicy, "Cloned PD Controller", 5)
+display(state_plots)
+display(total_plots)
 
 
