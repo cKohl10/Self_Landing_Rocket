@@ -43,7 +43,7 @@ print_env(env)
 
 # # Test the continuous translation of the heuristic policy
 # println("Heuristic PD Controller Avg Reward: ", eval(env, heuristic_policy, 10000))
-total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 5)
+total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 10)
 display(state_plots)
 display(total_plots)
 

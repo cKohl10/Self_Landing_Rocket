@@ -136,9 +136,9 @@ function CloneExpert(env, heuristic)
     #         Dense(128, 1))
     # bestNet = deepcopy(net)
 
-    net = Chain(Dense(length(observe(env))-1, 128, relu),       # -1 for not including time in the state
-            Dense(128, 128, relu),
-            Dense(128, 1))
+    net = Chain(Dense(length(observe(env))-1, 64, relu),       # -1 for not including time in the state
+            Dense(64, 64, relu),
+            Dense(64, 1))
     bestNet = deepcopy(net)
 
     # HYPERPARAMETERS
@@ -149,7 +149,7 @@ function CloneExpert(env, heuristic)
 
     # Supervised learning Hyperparameters
     epochs_sp = 500
-    batchSize_sp = 2048
+    batchSize_sp = 1024
     use_gpu = true
 
     # Check if CUDA is available
@@ -182,10 +182,15 @@ function CloneExpert(env, heuristic)
         # data = [(gpu(inputData[i]), gpu(outputData[i])) for i in 1:length(inputData)]
         # Flux.train!(loss, net, data, opt)
         losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, true)
+        net = cpu(net)
     else
         losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
     end
-    s,p = render(env, s->actions(env)[argmax(cpu(net(s)))], "Supervised Learning Model", 20)
+
+    function net_policy_reduced_state(s)
+        return actions(env)[argmax(net(s[1:6]))]
+    end
+    s,p = render(env, net_policy_reduced_state, "Supervised Learning Model", 20)
     display(p) # State space plot
     display(s) # Display the inertial path plot
 
@@ -234,7 +239,7 @@ function CloneExpert(env, heuristic)
 
         # Create policy
         function netPolicy(s)
-            thrust = net(s)
+            thrust = net(s[1:6])
             return convert(Float64, thrust[1])
         end
 
