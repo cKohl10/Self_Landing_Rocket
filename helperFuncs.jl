@@ -69,8 +69,8 @@ function rand_float(min::Float64, max::Float64)
 end
 
 # Useful for plotting the learning curves
-function data_plot(data, label, title=nothing)
-    epochs = 1:length(data)
+function data_plot(data, label, title=nothing, scalar=1.0)
+    epochs = (1:length(data))*scaler
     n = ceil(Int, length(epochs)/100)
     if n <= 0
         n = 1
@@ -137,7 +137,7 @@ function torque_controls(env::RocketEnv2D, state, action)
 
 end
 
-function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(0.001), using_GPU=false)
+function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM(0.001), using_GPU=false, eval_steps=5)
     # X = input data [nxm], Y = target data [nx1]
     # Train the model using supervised learning
     if using_GPU
@@ -151,8 +151,9 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
     end
 
     # Create a progress bar
-    p = Progress(epochs, 1)
+    p = Progress(Int(epochs/eval_steps), 1)
     losses = []
+    loss_val = 0.0
 
     for epoch in 1:epochs
 
@@ -168,7 +169,7 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
         Flux.train!(loss_fn, model, data, opt)
 
         # Print the loss every 10 epochs
-        if epoch % 5 == 0
+        if epoch % eval_steps == 0
             # Get a validation set of data to compare to the training data
             x, y = first(train_loader)
             loss_val = 0.0
@@ -181,7 +182,18 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
             next!(p)
             println("\nEpoch: ", epoch, " Loss: ", loss_val)
 
+            # Append the loss to the losses array
             push!(losses, loss_val)
+
+        end
+
+        if epoch % (eval_steps*10) == 0
+            # Save the model every 100 epochs
+            println("Saving model...")
+            save_model(model, "models/supervised_model.bson")
+
+            # Plot the learning curve
+            data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scaler=eval_steps)
         end
     end
 

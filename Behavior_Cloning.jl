@@ -144,17 +144,22 @@ function CloneExpert(env, heuristic)
     # HYPERPARAMETERS
     maxSteps = 2000        # Max steps in the environment for episode calls
     numEps = 10000           # Episodes for initial data set
-    daggerEPs = 10          # Addition simulations to augment data set
+    daggerEPs = 40          # Addition simulations to augment data set
     best_reward = -Inf
 
     # Supervised learning Hyperparameters
     epochs_sp = 500
-    batchSize_sp = 1024
+    batchSize_sp = 5096
     use_gpu = true
+    load_Q = false
 
     # Check if CUDA is available
     if CUDA.functional() && use_gpu
         println("Using CUDA for training...")
+        if load_Q
+            println("Loading previously trained model...")
+            net = BSON.load("models/supervised_learning.bson")[:Q]
+        end
         net = gpu(net)
     else
         println("CUDA not available, training on CPU...")
@@ -195,7 +200,7 @@ function CloneExpert(env, heuristic)
     display(s) # Display the inertial path plot
 
     # Plot the learning curve
-    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning"))
+    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scalar=5))
 
     print("Cloned Behavior, executing DAgger...\n")
 
@@ -252,6 +257,16 @@ function CloneExpert(env, heuristic)
         end
 
         print("DAgger Epoch: ", i, " Average Reward: ", DAggerReward, "\n")
+
+        # Display simulated trajectories
+        if i % 10 == 0
+            # Simulate the environment with a few trajectories
+            title_name = "DAgger Epoch: " * string(i)
+            s, p = render(env, s->netPolicy(s), title_name)
+            display(p)
+            display(s)
+        end
+
     end
     print("Saved clone model with best reward of: ", best_reward, "\n")
     save_model(bestNet, string("models/Clone_" * @sprintf("%0.1f",best_reward) * "_best_reward"))
