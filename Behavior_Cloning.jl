@@ -153,14 +153,19 @@ function CloneExpert(env, heuristic)
     use_gpu = true
     load_Q = false
 
+    function net_policy_reduced_state(s)
+        return actions(env)[argmax(net(s[1:6]))]
+    end
+
     # Check if CUDA is available
     if CUDA.functional() && use_gpu
         println("Using CUDA for training...")
+        net = gpu(net)
         if load_Q
             println("Loading previously trained model...")
-            net = BSON.load("models/supervised_learning.bson")[:Q]
+            net = BSON.load("models/supervised_model.bson")[:Q]
+            println("Avg Reward: ", eval(env, net_policy_reduced_state, 1000))
         end
-        net = gpu(net)
     else
         println("CUDA not available, training on CPU...")
     end
@@ -190,10 +195,6 @@ function CloneExpert(env, heuristic)
         net = cpu(net)
     else
         losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
-    end
-
-    function net_policy_reduced_state(s)
-        return actions(env)[argmax(net(s[1:6]))]
     end
     s,p = render(env, net_policy_reduced_state, "Supervised Learning Model", 20)
     display(p) # State space plot
