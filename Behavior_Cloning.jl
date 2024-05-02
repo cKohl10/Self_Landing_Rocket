@@ -200,7 +200,7 @@ function CloneExpert(env, heuristic)
     display(s) # Display the inertial path plot
 
     # Plot the learning curve
-    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scalar=5))
+    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", 5))
 
     print("Cloned Behavior, executing DAgger...\n")
 

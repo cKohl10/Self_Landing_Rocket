@@ -70,7 +70,7 @@ end
 
 # Useful for plotting the learning curves
 function data_plot(data, label, title=nothing, scalar=1.0)
-    epochs = (1:length(data))*scaler
+    epochs = (1:length(data))*scalar
     n = ceil(Int, length(epochs)/100)
     if n <= 0
         n = 1
@@ -193,7 +193,7 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
             save_model(model, "models/supervised_model.bson")
 
             # Plot the learning curve
-            data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scaler=eval_steps)
+            data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning",eval_steps)
         end
     end
 
