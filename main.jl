@@ -43,24 +43,24 @@ print_env(env)
 
 # # Test the continuous translation of the heuristic policy
 # println("Heuristic PD Controller Avg Reward: ", eval(env, heuristic_policy, 10000))
-total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 10)
-display(state_plots)
-display(total_plots)
+# total_plots, state_plots = render(env, heuristic_policy, "Heuristic PD Controller", 10)
+# display(state_plots)
+# display(total_plots)
 
-# # Test the discrete translation of the PD controller
-total_plots, state_plots = render(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD to Discrete Controller")
-display(state_plots)
-display(total_plots)
+# # # Test the discrete translation of the PD controller
+# total_plots, state_plots = render(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD to Discrete Controller")
+# display(state_plots)
+# display(total_plots)
 
-# Save the output of a single PD to Discrete Controller
-print("Saving PD to Discrete Controller Output in CSV...\n")
-total_plots, state_plots = render_and_save(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD2Disc")
-display(state_plots)
-display(total_plots)
+# # Save the output of a single PD to Discrete Controller
+# print("Saving PD to Discrete Controller Output in CSV...\n")
+# total_plots, state_plots = render_and_save(env, s->actions(env)[discrete_policy_distance_metric(s)], "PD2Disc")
+# display(state_plots)
+# display(total_plots)
 
 # Train a DQN model
 # Q = DQN_Solve(env)
-Q = DQN_Solve_Metric(env,true)
+ Q = DQN_Solve_Metric(env)
 
 # Define basic policy
 # policy = state -> begin
@@ -74,5 +74,9 @@ Q = DQN_Solve_Metric(env,true)
 # print("Total Reward: ", total_reward)
 
 
-
-
+#Display Best Q network generated
+file_path = "E:/owenc/Documents/Self_Landing_Rocket/models/Q_discrete_metric_5535.1_best_reward"
+Q_best = BSON.load(file_path)
+s,p = render(env, s->actions(env)[argmax(Q(s))], "Q_best", 100)
+display(p) # Display the state plots
+display(s) # Display the inertial path plot

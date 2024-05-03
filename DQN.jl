@@ -187,12 +187,12 @@ function DQN_Solve_Metric(env)
 
     # HYPERPARAMETERS
     bufferSize = 100000
-    batch = 1000
+    batch = 2000
     ϵ_max = 0.6
     ϵ_min = 0.05
-    exploration_epochs = 10000
+    exploration_epochs = 1
     n = 1000 # Number of steps in an episode
-    epochs = 15000
+    epochs = 5
     num_eps = 100   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
     set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
@@ -265,6 +265,11 @@ function DQN_Solve_Metric(env)
 
     # Execute DQN Learning
     for epoch in 1:epochs
+        if epoch == exploration_epochs
+            print("Exploration phase completed...\n")
+            Q = deepcopy(Q_best)
+            q_target = deepcopy(Q_best)
+        end
         # Rest the environment
         reset!(env)
 
