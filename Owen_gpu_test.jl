@@ -88,9 +88,15 @@ function DQN_Solve_Metric(env)
         priorities = Float64[buffer[item] for item in items]
         total_priority = sum(priorities)
         probabilities = priorities / total_priority
-        
+    
+        # Ensure we do not sample more than available
+        actual_batch_size = min(batch_size, length(items))
+        if actual_batch_size < batch_size
+            @warn "Reduced batch size due to insufficient samples in buffer"
+        end
+    
         # Sample based on these probabilities
-        indices = sample(1:length(items), Weights(probabilities), batch_size, replace=false)
+        indices = sample(1:length(items), Weights(probabilities), actual_batch_size, replace=false)
         sampled_experiences = [items[i] for i in indices]
         return sampled_experiences
     end
