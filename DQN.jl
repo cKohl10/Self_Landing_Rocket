@@ -12,7 +12,11 @@ function DQN_Solve_Metric(env)
 
     # Deep Q Network to approximate the Q values
     Q = Chain(Dense(length(observe(env)), 128, relu),
+<<<<<<< Updated upstream
             Dense(128, 128, relu),Dense(128, 128, relu),
+=======
+            Dense(128, 128, relu),Dense(128, 128, relu)
+>>>>>>> Stashed changes
             Dense(128, length(actions(env))))
 
     load = false
@@ -28,7 +32,11 @@ function DQN_Solve_Metric(env)
 
     # HYPERPARAMETERS
     bufferSize = 150000
+<<<<<<< Updated upstream
     batch = 5000
+=======
+    batch = 3000
+>>>>>>> Stashed changes
     ϵ_max = 0.6
     ϵ_min = 0.05
     exploration_epochs = 2000
