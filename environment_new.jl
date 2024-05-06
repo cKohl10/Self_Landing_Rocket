@@ -122,7 +122,7 @@ function reward!(env::RocketEnv2D)
     target_direction = [(x_target - x),(y_target-y)]/norm([(x_target - x),(y_target-y)])
     velocity_direction = [x_dot, y_dot]/norm([x_dot, y_dot])
     dot_product = dot(target_direction, velocity_direction)
-    reward = 0.5*dot_product
+    reward = 0.1*dot_product
     
 
     return reward
