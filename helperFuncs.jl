@@ -165,6 +165,10 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
         # end
 
         data, state = iterate(train_loader)
+
+        # Remove any NaN values from the data
+        #data = filter(x -> !any(isnan, x), data)
+
         data = vec(collect(zip(data[1], data[2])))
         Flux.train!(loss_fn, model, data, opt)
 
@@ -193,7 +197,7 @@ function supervised_learning!(model, X, Y, epochs, batch_size, loss_fn, opt=ADAM
             save_model(model, "models/supervised_model_temp.bson")
 
             # Plot the learning curve
-            data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scalar=eval_steps)
+            data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", eval_steps)
         end
     end
 

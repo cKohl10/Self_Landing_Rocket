@@ -144,12 +144,13 @@ function CloneExpert(env, heuristic)
     # HYPERPARAMETERS
     maxSteps = 2000        # Max steps in the environment for episode calls
     numEps = 10000           # Episodes for initial data set
-    daggerEPs = 40          # Addition simulations to augment data set
+    daggerEPs = 50          # Addition simulations to augment data set
     best_reward = -Inf
 
     # Supervised learning Hyperparameters
-    epochs_sp = 500
-    batchSize_sp = 5096
+    epochs_sp = 200 # Number of epochs to train the supervised learning model
+    batchSize_sp = 5096 # Batch size for training the supervised learning model
+    eval_steps = 2 # Number of steps to output a loss value while training supervised learning model
     use_gpu = true
     load_Q = false
 
@@ -163,8 +164,8 @@ function CloneExpert(env, heuristic)
         net = gpu(net)
         if load_Q
             println("Loading previously trained model...")
-            net = BSON.load("models/supervised_model.bson")[:Q]
-            println("Avg Reward: ", eval(env, net_policy_reduced_state, 1000))
+            net = BSON.load("models/supervised_model_best_1.bson")[:Q]
+            #println("Avg Reward: ", eval(env, net_policy_reduced_state, 1000))
         end
     else
         println("CUDA not available, training on CPU...")
@@ -191,17 +192,17 @@ function CloneExpert(env, heuristic)
     if CUDA.functional() && use_gpu
         # data = [(gpu(inputData[i]), gpu(outputData[i])) for i in 1:length(inputData)]
         # Flux.train!(loss, net, data, opt)
-        losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, true)
+        losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, true, eval_steps)
         net = cpu(net)
     else
-        losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt)
+        losses = supervised_learning!(net, inputData, outputData, epochs_sp, batchSize_sp, loss, opt, false, eval_steps)
     end
     s,p = render(env, net_policy_reduced_state, "Supervised Learning Model", 20)
     display(p) # State space plot
     display(s) # Display the inertial path plot
 
     # Plot the learning curve
-    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", scalar=5))
+    display(data_plot(losses, "Loss", "Training Curve for Supervised Behavior Cloning", 5))
 
     print("Cloned Behavior, executing DAgger...\n")
 
@@ -266,6 +267,9 @@ function CloneExpert(env, heuristic)
             s, p = render(env, s->netPolicy(s), title_name)
             display(p)
             display(s)
+
+            print("Saved temperary clone model with best reward of: ", best_reward, "\n")
+            save_model(bestNet, string("models/clone_model_temp"))
         end
 
     end
@@ -276,7 +280,7 @@ end
 
 function save_model(Q, filename)
     # Save the model to a file
-    BSON.@save filename Q
+    BSON.@save (filename * ".bson") Q
 end
 
 

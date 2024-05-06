@@ -44,7 +44,7 @@ end
 
 # Policy based on the neural network
 function netPolicy(s)
-    thrust = net(s)
+    thrust = net(s[1:6])
     return convert(Float64, thrust[1])
 end
 
