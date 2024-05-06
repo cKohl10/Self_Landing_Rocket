@@ -98,8 +98,26 @@ display(total_plots)
 
 
 #Display Best Q network generated
-# file_path = "E:/owenc/Documents/Self_Landing_Rocket/models/Q_discrete_metric_5535.1_best_reward"
-# Q_best = BSON.load(file_path)
-# s,p = render(env, s->actions(env)[argmax(Q(s))], "Q_best", 100)
+# file_path = "E:/owenc/Documents/Self_Landing_Rocket/models/Q_discrete_metric_5535_best_reward"
+# file_path = "/Users/owencraig/Documents/GitHub/Self_Landing_Rocket/models/Q_discrete_metric_5535_best_reward"
+# Q_best = BSON.load(file_path)[:Q]
+# Qpolicy = s->actions(env)[argmax(Q_best(s))]
+# s,p = render(env, Qpolicy, "Q_best", 10)
 # display(p) # Display the state plots
 # display(s) # Display the inertial path plot
+# # savefig(s,"DQN_Traj.png")
+# # savefig(p,"DQN_States.png")
+# # Define policy from the Q values, take the maximum Q value for a given state
+# reward = [];
+# for i in 1:10000
+#     reset!(env)
+#     r = simulate!(env, Qpolicy, 10000)
+#     push!(reward, r)
+#     if i % 100 == 0
+#         println("Episode: ", i)
+#     end
+# end
+# avg_reward = mean(reward)
+# sem_DQN = std(reward)/sqrt(length(reward))
+# println("Average Reward: ", avg_reward)
+# println("SEM: ", sem_DQN)

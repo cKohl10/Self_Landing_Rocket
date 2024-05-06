@@ -11,9 +11,13 @@ function DQN_Solve_Metric(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(observe(env)), 64, relu),
-            Dense(64, 64, relu),
-            Dense(64, length(actions(env))))
+    Q = Chain(Dense(length(observe(env)), 128, relu),
+<<<<<<< Updated upstream
+            Dense(128, 128, relu),Dense(128, 128, relu),
+=======
+            Dense(128, 128, relu),Dense(128, 128, relu)
+>>>>>>> Stashed changes
+            Dense(128, length(actions(env))))
 
     load = false
     if load
@@ -27,16 +31,20 @@ function DQN_Solve_Metric(env)
     #Q_best_local = deepcopy(Q)
 
     # HYPERPARAMETERS
-    bufferSize = 100000
-    batch = 2000
+    bufferSize = 150000
+<<<<<<< Updated upstream
+    batch = 5000
+=======
+    batch = 3000
+>>>>>>> Stashed changes
     ϵ_max = 0.6
     ϵ_min = 0.05
-    exploration_epochs = 5000
+    exploration_epochs = 2000
     n = 1000 # Number of steps in an episode
-    epochs = 10000
+    epochs = 5000
     num_eps = 100   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
-    set_Q_targ = 5 # Set the target Q network every set_Q_targ epochs
+    set_Q_targ = 1 # Set the target Q network every set_Q_targ epochs
 
     function continuous_policy(s)
         thrust_cont, torque_cont = heuristic_policy(s)
