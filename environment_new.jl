@@ -45,7 +45,7 @@ function RocketEnv2D(bounds::Vector{Float64}, dt::Float64, g::Float64, ϕ_max::F
     target = ((bounds[2] - bounds[1]) / 2.0) + bounds[1]
 
     # Discount factor
-    γ = 0.999
+    γ = 0.95
 
     ####### Rotational Gains #######
     τ_1 = 2 # Settling time of mode 1 in seconds
@@ -115,14 +115,14 @@ function reward!(env::RocketEnv2D)
     # Return a negative reward for going out of bounds
     if x < env.bounds[1] || x > env.bounds[2] || y > env.bounds[4]*1.5
         env.landed = true
-        return -200
+        return -6000
     end
 
     # If the rocket moves towards the target, give a small reward
     target_direction = [(x_target - x),(y_target-y)]/norm([(x_target - x),(y_target-y)])
     velocity_direction = [x_dot, y_dot]/norm([x_dot, y_dot])
     dot_product = dot(target_direction, velocity_direction)
-    reward = 0.1*dot_product
+    reward = 0.5*dot_product
     
 
     return reward

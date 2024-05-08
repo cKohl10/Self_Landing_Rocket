@@ -11,13 +11,13 @@ function DQN_Solve_Metric(env)
     reset!(env)
 
     # Deep Q Network to approximate the Q values
-    Q = Chain(Dense(length(observe(env)), 128, relu),
-<<<<<<< Updated upstream
-            Dense(128, 128, relu),Dense(128, 128, relu),
-=======
-            Dense(128, 128, relu),Dense(128, 128, relu)
->>>>>>> Stashed changes
-            Dense(128, length(actions(env))))
+    Q = Chain(
+        Dense(length(observe(env)), 128, relu),
+        Dropout(0.1),
+        Dense(128, 128, relu),
+        Dropout(0.1),
+        Dense(128, length(actions(env)))
+    )
 
     load = false
     if load
@@ -32,19 +32,16 @@ function DQN_Solve_Metric(env)
 
     # HYPERPARAMETERS
     bufferSize = 150000
-<<<<<<< Updated upstream
-    batch = 5000
-=======
-    batch = 3000
->>>>>>> Stashed changes
+    batch = 2000
     ϵ_max = 0.6
     ϵ_min = 0.05
-    exploration_epochs = 2000
+    exploration_epochs = 5000
     n = 1000 # Number of steps in an episode
-    epochs = 5000
+    epochs = 10000
     num_eps = 100   # For evaluate function
     max_steps = 2000 # Maximum number of steps in an eval episode
     set_Q_targ = 1 # Set the target Q network every set_Q_targ epochs
+    decay_rate = 0.005
 
     function continuous_policy(s)
         thrust_cont, torque_cont = heuristic_policy(s)
@@ -123,34 +120,45 @@ function DQN_Solve_Metric(env)
         reset!(env)
 
         # Set Optimizer
-        opt = Flux.setup(ADAM(0.0005), Q)
+        lr = 0.0005 * exp(-decay_rate * epoch)  # Decrease learning rate gradually
+        opt = Flux.setup(ADAM(lr), Q)
 
         # Gain experience
-        function ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch) 
-            if epoch <= exploration_epochs
-                return ϵ_min + (ϵ_max - ϵ_min) * ((epochs - epoch)/exploration_epochs)
-            else
-                return ϵ_min
-            end
-        end
+        # function ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch) 
+        #     if epoch <= exploration_epochs
+        #         return ϵ_min + (ϵ_max - ϵ_min) * ((epochs - epoch)/exploration_epochs)
+        #     else
+        #         return ϵ_min
+        #     end
+        # end
+        # buffer = experience(buffer, n, ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch))
 
-        buffer = experience(buffer, n, ϵ(ϵ_min, ϵ_max, exploration_epochs, epoch))
+        function epsilon(ϵ_min, ϵ_max, decay_rate, epoch)
+            return ϵ_min + (ϵ_max - ϵ_min) * exp(-decay_rate * epoch)
+        end
+        buffer = experience(buffer, n, epsilon(ϵ_min, ϵ_max, decay_rate, epoch))
+        
 
         # Copy Q network and define the loss function
         if epoch % set_Q_targ == 0
             Q_target = deepcopy(Q)
         end
+        # function loss(Q, s, a_ind, r, sp, done)
+        #     # Discount factor
+        #     g = env.γ
+        #     # Reached terminal state
+        #     if done
+        #         return (r - Q(s)[a_ind])^2
+        #     end
+        #     # DQN Loss Function
+        #     return (r + g*maximum(Q_target(sp)) - Q(s)[a_ind])^2
+        # end
         function loss(Q, s, a_ind, r, sp, done)
-            # Discount factor
             g = env.γ
-            # Reached terminal state
-            if done
-                return (r - Q(s)[a_ind])^2
-            end
-            # DQN Loss Function
-            return (r + g*maximum(Q_target(sp)) - Q(s)[a_ind])^2
+            target_Q_value = done ? r : r + g * maximum(Q_target(sp))
+            return (target_Q_value - Q(s)[a_ind])^2
         end
-
+        
         # Get random data from the buffer
         data = rand(buffer, batch)
 
